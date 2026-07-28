@@ -1,18 +1,34 @@
 import 'package:flutter/material.dart';
-import 'home/home_screen.dart';
+import 'package:flutter/services.dart';
+
+import '../services/sfx.dart';
+import '../theme/palette.dart';
+import '../widgets/pixel_icons.dart';
+
 import 'habits/habits_screen.dart';
+import 'home/home_screen.dart';
+
+
 import 'settings/settings_screen.dart';
 
-class Shell extends StatefulWidget {
-  const Shell({super.key});
+
+class NaviShell extends StatefulWidget {
+  const NaviShell({super.key});
 
   @override
-  State<Shell> createState() => ShellState();
+  State<NaviShell> createState() => NaviShellState();
 }
 
-class ShellState extends State<Shell> {
+class NaviShellState extends State<NaviShell> {
   int _index = 0;
 
+  static const _tabs = [
+    (Px.home, 'HOME'),
+    (Px.grid, 'HABITS'),
+    (Px.gear, 'SYSTEM'),
+  ];
+
+  
   void goTo(int index) {
     if (index == _index) return;
     setState(() => _index = index);
@@ -20,8 +36,8 @@ class ShellState extends State<Shell> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Scaffold(
-      backgroundColor: Colors.black,
       body: IndexedStack(
         index: _index,
         children: const [
@@ -32,36 +48,29 @@ class ShellState extends State<Shell> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.black,
-          border: Border(top: BorderSide(color: Colors.grey.shade800)),
+          color: p.bg,
+          border: Border(top: BorderSide(color: p.border)),
         ),
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 60,
+            height: 62,
             child: Row(
               children: [
-                _NavItem(
-                  icon: Icons.home_outlined,
-                  iconSelected: Icons.home,
-                  label: 'HOME',
-                  selected: _index == 0,
-                  onTap: () => setState(() => _index = 0),
-                ),
-                _NavItem(
-                  icon: Icons.grid_view_outlined,
-                  iconSelected: Icons.grid_view,
-                  label: 'HABITS',
-                  selected: _index == 1,
-                  onTap: () => setState(() => _index = 1),
-                ),
-                _NavItem(
-                  icon: Icons.settings_outlined,
-                  iconSelected: Icons.settings,
-                  label: 'SETTINGS',
-                  selected: _index == 2,
-                  onTap: () => setState(() => _index = 2),
-                ),
+                for (final (i, tab) in _tabs.indexed)
+                  Expanded(
+                    child: _NavItem(
+                      glyph: tab.$1,
+                      label: tab.$2,
+                      selected: i == _index,
+                      onTap: () {
+                        if (i == _index) return;
+                        HapticFeedback.selectionClick();
+                        Sfx.tick();
+                        setState(() => _index = i);
+                      },
+                    ),
+                  ),
               ],
             ),
           ),
@@ -72,24 +81,24 @@ class ShellState extends State<Shell> {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData iconSelected;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
   const _NavItem({
-    required this.icon,
-    required this.iconSelected,
+    required this.glyph,
     required this.label,
     required this.selected,
     required this.onTap,
   });
 
+  final PixelGlyph glyph;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Colors.white : Colors.grey;
-    return Expanded(
+    final p = context.palette;
+    final color = selected ? p.accent : p.textGhost;
+    return Tactile(
+      pressedScale: 0.9,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
@@ -100,17 +109,18 @@ class _NavItem extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               width: 14,
               height: 2,
-              color: selected ? Colors.white : Colors.transparent,
+              color: selected ? p.accent : Colors.transparent,
               margin: const EdgeInsets.only(bottom: 6),
             ),
-            Icon(selected ? iconSelected : icon, color: color, size: 22),
-            const SizedBox(height: 4),
+            PixelIcon(glyph, color: color, size: 18),
+            const SizedBox(height: 5),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontFamily: kFontPixel,
+                fontSize: 6,
+                letterSpacing: 1,
                 color: color,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ],
@@ -118,4 +128,18 @@ class _NavItem extends StatelessWidget {
       ),
     );
   }
+}
+
+class Tactile extends StatelessWidget {
+  const Tactile({
+    super.key,
+    required this.pressedScale,
+    required this.child,
+  });
+
+  final double pressedScale;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => child;
 }
