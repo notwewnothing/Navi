@@ -1,71 +1,102 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/palette.dart';
+import '../../widgets/pixel_icons.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: p.bg,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
           children: [
+            // ---- header ----
             Row(
               children: [
-                Container(width: 8, height: 8, color: Colors.white),
-                const SizedBox(width: 10),
-                Text(
-                  'NAVI',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade300,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(width: 10, height: 10, color: p.accent),
+                    const SizedBox(width: 10),
+                    Text('NAVI', style: p.logo),
+                  ],
                 ),
+                const Spacer(),
+                PixelIcon(Px.gear, color: p.textDim, size: 18),
               ],
             ),
-            const SizedBox(height: 60),
-            const Center(
-              child: Text(
-                'HI',
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 6),
             Text(
-              "TODAY'S PROGRESS",
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade500,
-              ),
+              "Present day... present time...",
+              style: p.quote,
             ),
+            const SizedBox(height: 22),
+
+            // ---- today's progress ----
+            Text("TODAY'S PROGRESS", style: p.h2),
             const SizedBox(height: 12),
             SizedBox(
-              height: 110,
+              height: 118,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: 3,
                 separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (context, i) {
-                  final habits = [
-                    ('Work Out', '#1', 5),
-                    ('Read', '#2', 12),
-                    ('Meditate', '#3', 3),
+                  final items = [
+                    (Px.flame, 'WORK OUT', 5, true),
+                    (Px.book, 'READ', 12, true),
+                    (Px.heart, 'MEDITATE', 3, false),
                   ];
-                  final (name, icon, streak) = habits[i];
+                  final (icon, name, streak, done) = items[i];
                   return _HabitCard(
                     icon: icon,
                     name: name,
                     streak: streak,
-                    done: i == 2,
+                    done: done,
                   );
                 },
               ),
+            ),
+            const SizedBox(height: 26),
+
+            // ---- quick actions ----
+            Text('PROTOCOLS', style: p.h2),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _ActionButton(
+                    label: 'FOCUS',
+                    glyph: Px.eye,
+                    color: p.accent,
+                    onTap: () {},
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _ActionButton(
+                    label: 'SLEEP',
+                    glyph: Px.moon,
+                    color: p.accent,
+                    onTap: () {},
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _ActionButton(
+                    label: 'STATS',
+                    glyph: Px.chart,
+                    color: p.accent,
+                    onTap: () {},
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -75,11 +106,6 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _HabitCard extends StatelessWidget {
-  final String icon;
-  final String name;
-  final int streak;
-  final bool done;
-
   const _HabitCard({
     required this.icon,
     required this.name,
@@ -87,56 +113,117 @@ class _HabitCard extends StatelessWidget {
     required this.done,
   });
 
+  final PixelGlyph icon;
+  final String name;
+  final int streak;
+  final bool done;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 140,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: done ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade900,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: done ? Colors.white38 : Colors.grey.shade700,
+    final p = context.palette;
+    return SizedBox(
+      width: 150,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: done ? p.panelHi : p.panel,
+          border: Border.all(color: done ? p.accentDim : p.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                PixelIcon(icon, color: done ? p.accent : p.textDim, size: 18),
+                const Spacer(),
+                PixelIcon(
+                  done ? Px.check : Px.circle,
+                  color: done ? p.accent : p.textGhost,
+                  size: 16,
+                ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: kFontTerminal,
+                fontSize: 19,
+                height: 1.05,
+                color: done ? p.text : p.textDim,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Row(
+              children: [
+                PixelIcon(
+                  Px.flame,
+                  color: streak > 0 ? p.accentMid : p.textGhost,
+                  size: 11,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '$streak',
+                  style: p.label.copyWith(
+                    color: streak > 0 ? p.accentMid : p.textGhost,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(icon, style: const TextStyle(fontSize: 20)),
-              const Spacer(),
-              Icon(
-                done ? Icons.check_circle : Icons.circle_outlined,
-                color: done ? Colors.white : Colors.grey,
-                size: 18,
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            name.toUpperCase(),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: done ? Colors.white : Colors.grey.shade400,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Text('Streak', style: TextStyle(fontSize: 11)),
-              const SizedBox(width: 4),
-              Text(
-                '$streak',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: streak > 0 ? Colors.orange.shade300 : Colors.grey,
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.label,
+    required this.glyph,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final PixelGlyph glyph;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: color, width: 1.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            PixelIcon(glyph, color: color, size: 14),
+            const SizedBox(width: 8),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: kFontPixel,
+                    fontSize: 9,
+                    letterSpacing: 1.5,
+                    color: color,
+                    height: 1.2,
+                  ),
                 ),
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
