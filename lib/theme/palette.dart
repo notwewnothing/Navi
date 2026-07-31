@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// NAVI design language — Serial Experiments Lain.
-/// Monochrome black + GitHub-green dot matrix. Two faces:
-/// `PixelDisplay` (Press Start 2P) for chrome — logos, headers, labels —
-/// and `Terminal` (VT323) for content — body text, numbers, times.
+/// PixelDisplay responsible for UI
 const kFontPixel = 'PixelDisplay';
 const kFontTerminal = 'Terminal';
 
-/// One selectable accent ramp. `l1..l4` is the commitment-board intensity
-/// ramp (dim → bright); `accent` == l4 is the primary UI color.
+
 class Accent {
   const Accent({
     required this.name,
@@ -66,15 +62,15 @@ const accents = <Accent>[
   ),
 ];
 
-/// Habit dot colors, indexed by Habit.colorIndex. Index 0 = "use accent".
+
 const habitDotColors = <Color>[
-  Color(0xff39d353), // green (default)
-  Color(0xff3dd6f5), // cyan
-  Color(0xfff5b53d), // amber
-  Color(0xffe83fd0), // magenta
-  Color(0xfff85149), // red
-  Color(0xff58a6ff), // blue
-  Color(0xfff0f6fc), // white
+  Color(0xff39d353), 
+  Color(0xff3dd6f5), 
+  Color(0xfff5b53d), 
+  Color(0xffe83fd0), 
+  Color(0xfff85149), 
+  Color(0xff58a6ff), 
+  Color(0xfff0f6fc), 
 ];
 
 class NaviPalette {
@@ -82,12 +78,11 @@ class NaviPalette {
 
   final Accent accentRamp;
 
-  /// AMOLED mode: true black background, panels pulled down to match so the
-  /// surface ladder keeps its proportions against it.
+  
   final bool amoled;
 
-  // Surfaces — near-black with a whisper of green so pure blacks (OLED) and
-  // panels still separate.
+
+  // Amoled
   Color get bg => amoled ? const Color(0xff000000) : const Color(0xff050705);
   Color get panel =>
       amoled ? const Color(0xff070907) : const Color(0xff0c100c);
@@ -96,12 +91,12 @@ class NaviPalette {
   Color get border => const Color(0xff1d241d);
   Color get borderHi => const Color(0xff2c352c);
 
-  // Ink.
+  
   Color get text => const Color(0xffe6ede6);
   Color get textDim => const Color(0xff7d8a7d);
   Color get textGhost => const Color(0xff414b41);
 
-  // Accent ramp.
+  // Accent ramp
   Color get accent => accentRamp.l4;
   Color get accentMid => accentRamp.l3;
   Color get accentDim => accentRamp.l2;
@@ -114,7 +109,7 @@ class NaviPalette {
     _ => accentRamp.l4,
   };
 
-  // Event-type indicator colors (spec: schedule dots).
+  // Event-type indicator colors 
   Color get focusDot => accent;
   Color get sleepDot => const Color(0xff58a6ff);
   Color get alarmDot => const Color(0xfff85149);
@@ -123,7 +118,7 @@ class NaviPalette {
 
   Color get danger => const Color(0xfff85149);
 
-  // ---- Text styles ----
+  
 
   TextStyle get logo => TextStyle(
     fontFamily: kFontPixel,
@@ -133,7 +128,7 @@ class NaviPalette {
     height: 1.4,
   );
 
-  /// Screen titles: chunky pixel caps.
+  
   TextStyle get h1 => TextStyle(
     fontFamily: kFontPixel,
     fontSize: 14,
@@ -142,7 +137,7 @@ class NaviPalette {
     height: 1.6,
   );
 
-  /// Section headers inside a screen.
+  
   TextStyle get h2 => TextStyle(
     fontFamily: kFontPixel,
     fontSize: 9,
@@ -151,7 +146,7 @@ class NaviPalette {
     height: 1.6,
   );
 
-  /// Tiny pixel labels (nav bar, chips, meta).
+  
   TextStyle get label => TextStyle(
     fontFamily: kFontPixel,
     fontSize: 7,
@@ -162,7 +157,7 @@ class NaviPalette {
 
   TextStyle get labelAccent => label.copyWith(color: accent);
 
-  /// Terminal body copy — journal entries, descriptions.
+  // terminal
   TextStyle get body => TextStyle(
     fontFamily: kFontTerminal,
     fontSize: 20,
@@ -172,7 +167,7 @@ class NaviPalette {
 
   TextStyle get bodyDim => body.copyWith(color: textDim);
 
-  /// Larger terminal text — habit names, list rows.
+  /// large terminal
   TextStyle get row => TextStyle(
     fontFamily: kFontTerminal,
     fontSize: 24,
@@ -180,7 +175,7 @@ class NaviPalette {
     height: 1.1,
   );
 
-  /// Big clock digits.
+  /// Big clock digits
   TextStyle get clock => TextStyle(
     fontFamily: kFontTerminal,
     fontSize: 96,
@@ -188,7 +183,7 @@ class NaviPalette {
     height: 1,
   );
 
-  /// The cycling Lain taglines.
+  // lain
   TextStyle get quote => TextStyle(
     fontFamily: kFontTerminal,
     fontSize: 19,
@@ -196,8 +191,7 @@ class NaviPalette {
     height: 1.2,
   );
 
-  /// Material ThemeData so stock widgets (inputs, dialogs, sheets,
-  /// pickers) fall in line without per-usage styling.
+  
   ThemeData toThemeData() {
     final scheme = ColorScheme.dark(
       surface: bg,
@@ -254,7 +248,7 @@ class NaviPalette {
   }
 }
 
-/// Inherited palette — rebuilt when the accent setting changes.
+
 class PaletteScope extends InheritedWidget {
   const PaletteScope({super.key, required this.palette, required super.child});
 
