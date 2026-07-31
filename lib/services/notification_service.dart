@@ -4,3 +4,4 @@ class NotificationService {
   Future<void> init() async {}
   Future<int?> launchedByAlarm() async => null;
 }
+

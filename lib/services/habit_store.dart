@@ -15,3 +15,4 @@ class HabitScope extends StatelessWidget {
   @override
   Widget build(BuildContext context) => child;
 }
+

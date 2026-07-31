@@ -16,7 +16,7 @@ class HomeScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
           children: [
-            // ---- header ----
+            
             Row(
               children: [
                 Row(
@@ -38,7 +38,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 22),
 
-            // ---- today's progress ----
+            
             Text("TODAY'S PROGRESS", style: p.h2),
             const SizedBox(height: 12),
             SizedBox(
@@ -65,7 +65,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 26),
 
-            // ---- quick actions ----
+            
             Text('PROTOCOLS', style: p.h2),
             const SizedBox(height: 12),
             Row(
