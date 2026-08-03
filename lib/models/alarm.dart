@@ -1,4 +1,3 @@
-/// An alarm. `dayBits` bit 0 = Monday, bit 6 = Sunday.
 enum AlarmRepeat { once, daily, weekdays, custom }
 
 extension AlarmRepeatLabel on AlarmRepeat {

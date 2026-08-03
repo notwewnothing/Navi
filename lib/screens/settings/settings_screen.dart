@@ -68,21 +68,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: 'ABOUT',
               children: [
                 _row(p, glyph: '\u{25C9}', label: 'NAVI v1.0'),
-                _divider(p),
-                _row(
-                  p,
-                  glyph: '\u{25C9}',
-                  label: 'SESSIONS',
-                  trailing: Text(
-                    '${settings.sessionCount}',
-                    style: TextStyle(
-                      fontFamily: kFontTerminal,
-                      fontSize: 18,
-                      color: p.accent,
-                      height: 1.1,
-                    ),
-                  ),
-                ),
               ],
               footer: Padding(
                 padding: const EdgeInsets.only(top: 14),

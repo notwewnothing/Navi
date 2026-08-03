@@ -3,4 +3,5 @@ class Sfx {
   static Future<void> init() async {}
 
   static void tick() {}
+  static void glitch() {}
 }

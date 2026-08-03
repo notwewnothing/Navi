@@ -349,7 +349,6 @@ class PixelIconButton extends StatelessWidget {
   }
 }
 
-/// Button , green plus button
 class PixelFab extends StatelessWidget {
   const PixelFab({super.key, required this.onTap, this.glyph = Px.plus});
 
@@ -388,7 +387,6 @@ class PixelFab extends StatelessWidget {
   }
 }
 
-/// terminal text
 class PixelTextField extends StatelessWidget {
   const PixelTextField({
     super.key,

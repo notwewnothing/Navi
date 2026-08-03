@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// PixelDisplay responsible for UI
 const kFontPixel = 'PixelDisplay';
 const kFontTerminal = 'Terminal';
 
@@ -82,7 +81,6 @@ class NaviPalette {
   final bool amoled;
 
 
-  // Amoled
   Color get bg => amoled ? const Color(0xff000000) : const Color(0xff050705);
   Color get panel =>
       amoled ? const Color(0xff070907) : const Color(0xff0c100c);
@@ -96,7 +94,6 @@ class NaviPalette {
   Color get textDim => const Color(0xff7d8a7d);
   Color get textGhost => const Color(0xff414b41);
 
-  // Accent ramp
   Color get accent => accentRamp.l4;
   Color get accentMid => accentRamp.l3;
   Color get accentDim => accentRamp.l2;
@@ -109,7 +106,6 @@ class NaviPalette {
     _ => accentRamp.l4,
   };
 
-  // Event-type indicator colors 
   Color get focusDot => accent;
   Color get sleepDot => const Color(0xff58a6ff);
   Color get alarmDot => const Color(0xfff85149);
@@ -157,7 +153,6 @@ class NaviPalette {
 
   TextStyle get labelAccent => label.copyWith(color: accent);
 
-  // terminal
   TextStyle get body => TextStyle(
     fontFamily: kFontTerminal,
     fontSize: 20,
@@ -167,7 +162,6 @@ class NaviPalette {
 
   TextStyle get bodyDim => body.copyWith(color: textDim);
 
-  /// large terminal
   TextStyle get row => TextStyle(
     fontFamily: kFontTerminal,
     fontSize: 24,
@@ -175,7 +169,6 @@ class NaviPalette {
     height: 1.1,
   );
 
-  /// Big clock digits
   TextStyle get clock => TextStyle(
     fontFamily: kFontTerminal,
     fontSize: 96,
@@ -183,7 +176,6 @@ class NaviPalette {
     height: 1,
   );
 
-  // lain
   TextStyle get quote => TextStyle(
     fontFamily: kFontTerminal,
     fontSize: 19,
