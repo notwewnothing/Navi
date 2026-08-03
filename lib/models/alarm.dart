@@ -1,3 +1,4 @@
+/// An alarm. `dayBits` bit 0 = Monday, bit 6 = Sunday.
 enum AlarmRepeat { once, daily, weekdays, custom }
 
 extension AlarmRepeatLabel on AlarmRepeat {
@@ -29,9 +30,13 @@ class Alarm {
   String label;
   int snoozeMinutes;
   AlarmRepeat repeat;
+
+
   int dayBits;
   bool enabled;
   DateTime? snoozedUntil;
+
+
   bool fromSchedule;
 
   DateTime? nextFire(DateTime from) {
