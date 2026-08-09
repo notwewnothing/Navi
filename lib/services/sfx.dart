@@ -4,4 +4,6 @@ class Sfx {
 
   static void tick() {}
   static void glitch() {}
+  static void knf() {}
+  static void complete() {}
 }

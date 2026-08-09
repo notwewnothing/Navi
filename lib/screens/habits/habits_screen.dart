@@ -1,50 +1,206 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../models/habit.dart';
+import '../../services/habit_store.dart';
+import '../../services/sfx.dart';
+import '../../theme/palette.dart';
+import '../../widgets/pixel_icons.dart';
+import '../../widgets/pixel_widgets.dart';
+import '../../widgets/routes.dart';
+import 'habit_checkin_screen.dart';
+import 'habit_edit_sheet.dart';
 
 class HabitsScreen extends StatelessWidget {
   const HabitsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final store = HabitScope.of(context);
+    final habits = store.habits;
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Container(width: 8, height: 8, color: Colors.white),
-                const SizedBox(width: 10),
-                Text(
-                  'NAVI',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade300,
+            PixelHeader(
+              title: 'HABITS',
+              actions: [
+                if (habits.isNotEmpty)
+                  Text(
+                    '${store.enabledHabits.length} ACTIVE',
+                    style: p.label.copyWith(color: p.accentMid),
                   ),
-                ),
               ],
             ),
-            const SizedBox(height: 40),
-            Text(
-              'HABITS',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade500,
+            Expanded(
+              child: habits.isEmpty
+                  ? const EmptyState(
+                      message: 'You have no habits... are you really here?',
+                      glyph: Px.grid,
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 6, 20, 96),
+                      itemCount: habits.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, i) => _Reveal(
+                        index: i,
+                        child: _HabitRow(habit: habits[i]),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: PixelFab(
+        onTap: () => showHabitEditSheet(context),
+      ),
+    );
+  }
+}
+
+class _HabitRow extends StatelessWidget {
+  const _HabitRow({required this.habit});
+
+  final Habit habit;
+
+  static const _dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+  String get _meta {
+    final bits = habit.dayBits & 0x7f;
+    final schedule = switch (bits) {
+      0x7f => 'EVERY DAY',
+      0x1f => 'WEEKDAYS',
+      0x60 => 'WEEKENDS',
+      0 => 'UNSCHEDULED',
+      _ => [
+        for (var i = 0; i < 7; i++)
+          if ((bits >> i) & 1 == 1) _dayNames[i],
+      ].join(' '),
+    };
+    final r = habit.reminderMinutes;
+    if (r == null) return schedule;
+    final hh = (r ~/ 60).toString().padLeft(2, '0');
+    final mm = (r % 60).toString().padLeft(2, '0');
+    return '$schedule / $hh:$mm';
+  }
+
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final p = context.palette;
+    final confirmed = await showPixelDialog<bool>(
+      context: context,
+      title: 'DELETE HABIT?',
+      builder: (context) => Text(
+        'ITS LOG VANISHES FROM THE WIRED.',
+        style: p.body,
+      ),
+      actions: (context) => [
+        DialogAction(
+          label: 'KEEP',
+          onTap: () => Navigator.pop(context, false),
+        ),
+        DialogAction(
+          label: 'DELETE',
+          danger: true,
+          onTap: () => Navigator.pop(context, true),
+        ),
+      ],
+    );
+    return confirmed ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final store = HabitScope.of(context);
+    final dotColor = habitDotColors[habit.colorIndex % habitDotColors.length];
+    final streak = store.streak(habit);
+    return Dismissible(
+      key: ValueKey('habit-${habit.id}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: p.danger,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 22),
+        child: const PixelIcon(Px.trash, color: Colors.black, size: 20),
+      ),
+      confirmDismiss: (_) {
+        HapticFeedback.mediumImpact();
+        return _confirmDelete(context);
+      },
+      onDismissed: (_) {
+        Sfx.glitch();
+        store.removeHabit(habit);
+        showPixelToast(context, 'ERASED FROM THE WIRED', glyph: Px.trash);
+      },
+      child: PixelCard(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        onTap: () => showHabitEditSheet(context, habit: habit),
+        onLongPress: () => Navigator.of(context).push(
+          slideUpRoute(HabitCheckinScreen(habit: habit)),
+        ),
+        child: Row(
+          children: [
+            PixelIcon(
+              Px.habitIcon(habit.icon),
+              color: habit.enabled ? dotColor : p.textGhost,
+              size: 22,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    habit.name.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: p.row.copyWith(
+                      fontSize: 22,
+                      color: habit.enabled ? p.text : p.textDim,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _meta,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: p.label,
+                        ),
+                      ),
+                      if (habit.requirePhoto) ...[
+                        const SizedBox(width: 6),
+                        PixelIcon(Px.camera, color: p.textGhost, size: 10),
+                      ],
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            ...habits.map(
-              (h) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _HabitCard(
-                  icon: h.icon,
-                  name: h.name,
-                  streak: h.streak,
-                  done: h.done,
-                ),
+            const SizedBox(width: 10),
+            PixelIcon(
+              Px.flame,
+              color: streak > 0 ? p.accentMid : p.textGhost,
+              size: 12,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$streak',
+              style: TextStyle(
+                fontFamily: kFontTerminal,
+                fontSize: 20,
+                height: 1,
+                color: streak > 0 ? p.accentMid : p.textGhost,
               ),
+            ),
+            const SizedBox(width: 12),
+            PixelSwitch(
+              value: habit.enabled,
+              onChanged: (_) => store.toggleHabit(habit),
             ),
           ],
         ),
@@ -53,97 +209,28 @@ class HabitsScreen extends StatelessWidget {
   }
 }
 
-class _HabitData {
-  final String icon;
-  final String name;
-  final int streak;
-  final bool done;
-  const _HabitData({
-    required this.icon,
-    required this.name,
-    required this.streak,
-    required this.done,
-  });
-}
+class _Reveal extends StatelessWidget {
+  const _Reveal({required this.index, required this.child});
 
-final habits = [
-  const _HabitData(icon: 'W', name: 'Work Out', streak: 5, done: false),
-  const _HabitData(icon: 'R', name: 'Read', streak: 12, done: true),
-  const _HabitData(icon: 'M', name: 'Meditate', streak: 3, done: false),
-  const _HabitData(icon: 'C', name: 'Code', streak: 8, done: true),
-  const _HabitData(icon: 'H', name: 'Hydrate', streak: 15, done: false),
-  const _HabitData(icon: 'L', name: 'Walk', streak: 4, done: false),
-  const _HabitData(icon: 'J', name: 'Journal', streak: 7, done: true),
-  const _HabitData(icon: 'S', name: 'Stretch', streak: 2, done: false),
-];
-
-class _HabitCard extends StatelessWidget {
-  final String icon;
-  final String name;
-  final int streak;
-  final bool done;
-
-  const _HabitCard({
-    required this.icon,
-    required this.name,
-    required this.streak,
-    required this.done,
-  });
+  final int index;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: done ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade900,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: done ? Colors.white38 : Colors.grey.shade700,
+    final delayMs = 80 * index;
+    final totalMs = 320 + delayMs;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: totalMs),
+      curve: Interval(delayMs / totalMs, 1, curve: Curves.easeOutCubic),
+      builder: (context, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(
+          offset: Offset(0, 14 * (1 - t)),
+          child: child,
         ),
       ),
-      child: Row(
-        children: [
-          Text(icon, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: done ? Colors.white : Colors.grey.shade400,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(
-                      'Streak',
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$streak',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: streak > 0 ? Colors.orange.shade300 : Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            done ? Icons.check_circle : Icons.circle_outlined,
-            color: done ? Colors.white : Colors.grey,
-            size: 22,
-          ),
-        ],
-      ),
+      child: child,
     );
   }
 }

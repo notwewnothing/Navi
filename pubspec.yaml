@@ -36,6 +36,10 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.5
   path_provider: ^2.1.5
+  image_picker: ^1.2.1
+  record: ^6.1.2
+  audioplayers: ^6.5.1
+  video_player: ^2.10.0
 
 # path_provider_android >=2.3.0 pulls the jni package, whose android
 # build.gradle uses the legacy kotlin() DSL and fails under this Gradle.

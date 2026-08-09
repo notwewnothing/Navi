@@ -22,6 +22,7 @@ class Habit {
   bool enabled;
   final DateTime createdAt;
 
+  // same bitmask as alarms, bit 0 = Monday
   bool scheduledOn(DateTime day) => (dayBits >> (day.weekday - 1)) & 1 == 1;
 
   Map<String, Object?> toJson() => {
@@ -87,6 +88,7 @@ class HabitLog {
   );
 }
 
+// YYYY-MM-DD keys so logs sort lexicographically, don't change the format or old saves break
 String dayKeyOf(DateTime day) =>
     '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
 

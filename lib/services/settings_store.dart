@@ -11,6 +11,7 @@ import '../theme/palette.dart';
 class SettingsStore extends ChangeNotifier {
   SettingsStore();
 
+  // bump the version if the blob shape changes, old saves fall back to defaults
   static const _prefsKey = 'navi.settings.v1';
 
   SharedPreferences? _prefs;
@@ -76,7 +77,9 @@ class SettingsStore extends ChangeNotifier {
         _sfxEnabled = data['sfxEnabled'] as bool? ?? true;
         _taglineIndex = data['taglineIndex'] as int? ?? 0;
       }
+    // corrupt or partial saves aren't worth crashing over, default and move on
     } catch (_) {}
+    // rotate the tagline every launch so it doesn't get stale
     _taglineIndex = (_taglineIndex + 1) % lainTaglines.length;
     _loaded = true;
     await _save();

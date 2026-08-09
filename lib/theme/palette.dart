@@ -14,6 +14,7 @@ class Accent {
   });
 
   final String name;
+  // 4-step ramp ghost to dim to mid to bright, l4 is the accent, l1 blends into the background
   final Color l1;
   final Color l2;
   final Color l3;
@@ -81,6 +82,7 @@ class NaviPalette {
   final bool amoled;
 
 
+  
   Color get bg => amoled ? const Color(0xff000000) : const Color(0xff050705);
   Color get panel =>
       amoled ? const Color(0xff070907) : const Color(0xff0c100c);
@@ -98,6 +100,7 @@ class NaviPalette {
   Color get accentMid => accentRamp.l3;
   Color get accentDim => accentRamp.l2;
   Color get accentGhost => accentRamp.l1;
+  // level 0 = nothing done, 4 = done, anything past 4 stays on l4
   Color boardLevel(int level) => switch (level) {
     <= 0 => const Color(0xff161b16),
     1 => accentRamp.l1,

@@ -31,6 +31,7 @@ class Alarm {
   AlarmRepeat repeat;
 
 
+  // dayBits bit 0 = Monday ... bit 6 = Sunday 0x7f = every day
   int dayBits;
   bool enabled;
   DateTime? snoozedUntil;
@@ -42,10 +43,12 @@ class Alarm {
     if (!enabled) return null;
     if (repeat == AlarmRepeat.custom && dayBits == 0) return null;
 
+    // snooze wins over the schedule if it's still in the future that's what fires
     final snooze = snoozedUntil;
     if (snooze != null && snooze.isAfter(from)) return snooze;
 
     var candidate = DateTime(from.year, from.month, from.day, hour, minute);
+    // search up to a year out if nothing matches in 370 days the alarm is dead, bail
     var guard = 0;
     while (!candidate.isAfter(from) || !_matchesRepeat(candidate)) {
       candidate = DateTime(

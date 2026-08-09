@@ -47,6 +47,7 @@ const wiredBootLines = <String>[
 
 abstract final class EasterEggs {
   static final _rng = Random();
+  // once per session so typing "lain" in search can't spam the glitch overlay
   static bool _lainTriggeredThisSession = false;
 
   static String randomWakeLine() =>

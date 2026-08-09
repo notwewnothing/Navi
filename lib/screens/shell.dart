@@ -7,7 +7,7 @@ import '../widgets/pixel_icons.dart';
 
 import 'habits/habits_screen.dart';
 import 'home/home_screen.dart';
-
+import 'journal/journal_screen.dart';
 
 import 'settings/settings_screen.dart';
 
@@ -25,6 +25,7 @@ class NaviShellState extends State<NaviShell> {
   static const _tabs = [
     (Px.home, 'HOME'),
     (Px.grid, 'HABITS'),
+    (Px.book, 'JOURNAL'),
     (Px.gear, 'SYSTEM'),
   ];
 
@@ -38,11 +39,13 @@ class NaviShellState extends State<NaviShell> {
   Widget build(BuildContext context) {
     final p = context.palette;
     return Scaffold(
+      // keeps every tab alive so switching doesn't reset scroll or state
       body: IndexedStack(
         index: _index,
         children: const [
           HomeScreen(),
           HabitsScreen(),
+          JournalScreen(),
           SettingsScreen(),
         ],
       ),

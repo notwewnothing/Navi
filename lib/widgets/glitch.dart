@@ -7,6 +7,7 @@ import '../theme/palette.dart';
 
 final _rng = Random();
 
+// katakana + terminal junk reads as corruption better than random ASCII
 const _corruptChars = 'ｱｲｳｴｵｶｷｸｹｺﾀﾁﾂﾃﾄﾅﾆﾇ01_/\\|#*+=<>';
 
 class GlitchText extends StatefulWidget {
@@ -91,6 +92,7 @@ class _GlitchTextState extends State<GlitchText> {
     final text = _corrupted ?? widget.text;
     final base = Text(text, style: widget.style, textAlign: widget.textAlign);
     if (!_shift) return base;
+    // classic RGB split, cyan ghost left, red ghost right, base on top
     return Stack(
       children: [
         Transform.translate(
@@ -136,7 +138,9 @@ class GlitchTear extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (progress <= 0 || progress >= 1) return child;
+    // sine envelope, mild at start/end of the tear, most violent in the middle
     final amp = sin(progress * pi);
+    // seeded by progress so the tear pattern stays stable frame-to-frame
     final rng = Random(seed + (progress * 6).floor());
     return ClipRect(
       child: LayoutBuilder(

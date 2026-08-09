@@ -68,6 +68,7 @@ class ScheduleEvent {
 
   static DateTime _dayOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
+  // mask implied by the repeat type daily = all 7 bits, weekdays = Mon-Fri only
   int get effectiveDayBits => switch (repeat) {
     EventRepeat.never => 1 << (anchorDay.weekday - 1),
     EventRepeat.daily => 0x7f,

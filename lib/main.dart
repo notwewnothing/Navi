@@ -41,6 +41,7 @@ class _NaviAppState extends State<NaviApp> {
   late final BlockStore _block;
   late final SessionStore _sessions;
 
+  // guard so two alarms can't push the ring screen at once
   bool _ringOpen = false;
 
   @override
@@ -91,6 +92,7 @@ class _NaviAppState extends State<NaviApp> {
     if (_ringOpen) return;
     final nav = _navigator.currentState;
     if (nav == null) {
+      // navigator might not be attached yet on cold launch, retry next frame
       WidgetsBinding.instance.addPostFrameCallback((_) => _openRing(alarm));
       return;
     }
