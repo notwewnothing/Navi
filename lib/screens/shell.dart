@@ -8,7 +8,7 @@ import '../widgets/pixel_icons.dart';
 import 'habits/habits_screen.dart';
 import 'home/home_screen.dart';
 import 'journal/journal_screen.dart';
-
+import 'schedule/schedule_screen.dart';
 import 'settings/settings_screen.dart';
 
 
@@ -26,6 +26,7 @@ class NaviShellState extends State<NaviShell> {
     (Px.home, 'HOME'),
     (Px.grid, 'HABITS'),
     (Px.book, 'JOURNAL'),
+    (Px.calendar, 'SCHEDULE'),
     (Px.gear, 'SYSTEM'),
   ];
 
@@ -46,6 +47,7 @@ class NaviShellState extends State<NaviShell> {
           HomeScreen(),
           HabitsScreen(),
           JournalScreen(),
+          ScheduleScreen(),
           SettingsScreen(),
         ],
       ),
