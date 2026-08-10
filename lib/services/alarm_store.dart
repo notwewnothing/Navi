@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../models/alarm.dart';
 import 'notification_service.dart';
 
+abstract class AlarmScheduler {
+  Future<void> syncAll(List<Alarm> alarms);
+}
+
 class AlarmStore {
   static const scheduleIdBase = 500000;
 
