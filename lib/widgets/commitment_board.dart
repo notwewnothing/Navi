@@ -287,3 +287,4 @@ class _BoardPainter extends CustomPainter {
       old.selected != selected ||
       old.palette.accentRamp != palette.accentRamp;
 }
+
