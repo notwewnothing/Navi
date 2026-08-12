@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../services/settings_store.dart';
 import '../../theme/palette.dart';
+import '../../widgets/routes.dart';
+import '../blocker/app_block_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -65,6 +67,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 22),
             _section(
               p,
+              title: 'FOCUS',
+              children: [
+                _row(
+                  p,
+                  glyph: '\u{25A0}',
+                  label: 'BLOCK RULES',
+                  onTap: () => Navigator.of(
+                    context,
+                  ).push(slideUpRoute(const AppBlockScreen())),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+            _section(
+              p,
               title: 'ABOUT',
               children: [
                 _row(p, glyph: '\u{25C9}', label: 'NAVI v1.0'),
@@ -119,8 +136,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String glyph,
     required String label,
     Widget? trailing,
+    VoidCallback? onTap,
   }) {
-    return Padding(
+    final row = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       child: Row(
         children: [
@@ -141,6 +159,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ?trailing,
         ],
       ),
+    );
+    if (onTap == null) return row;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: row,
     );
   }
 
