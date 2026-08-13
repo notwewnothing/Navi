@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../theme/palette.dart';
 import '../../widgets/pixel_icons.dart';
+import '../../widgets/routes.dart';
+import '../stats/screen_time_screen.dart';
+import '../timer/timer_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -75,7 +78,11 @@ class HomeScreen extends StatelessWidget {
                     label: 'FOCUS',
                     glyph: Px.eye,
                     color: p.accent,
-                    onTap: () {},
+                    onTap: () => Navigator.of(context).push(
+                      slideUpRoute(
+                        const TimerScreen(initialMode: TimerMode.focus),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -84,7 +91,11 @@ class HomeScreen extends StatelessWidget {
                     label: 'SLEEP',
                     glyph: Px.moon,
                     color: p.accent,
-                    onTap: () {},
+                    onTap: () => Navigator.of(context).push(
+                      slideUpRoute(
+                        const TimerScreen(initialMode: TimerMode.sleep),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -93,7 +104,9 @@ class HomeScreen extends StatelessWidget {
                     label: 'STATS',
                     glyph: Px.chart,
                     color: p.accent,
-                    onTap: () {},
+                    onTap: () => Navigator.of(
+                      context,
+                    ).push(slideUpRoute(const ScreenTimeScreen())),
                   ),
                 ),
               ],
