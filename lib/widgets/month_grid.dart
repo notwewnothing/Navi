@@ -40,6 +40,7 @@ class MonthGrid extends StatelessWidget {
     final first = DateTime(month.year, month.month, 1);
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
     final leading = first.weekday - 1;
+    // pad the first week to Monday and round up so the grid is always full rectangles
     final totalCells = ((leading + daysInMonth) / 7).ceil() * 7;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);

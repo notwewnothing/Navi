@@ -18,6 +18,7 @@ class DayStats {
   );
 }
 
+// 45M, 1H, 1H 30M, no seconds noise
 String minutesLabel(int minutes) {
   if (minutes <= 0) return '0M';
   if (minutes < 60) return '${minutes}M';

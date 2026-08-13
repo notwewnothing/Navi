@@ -43,6 +43,7 @@ class _HabitEditSheetState extends State<_HabitEditSheet> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // SettingsScope isn't reachable from initState, seed the reminder default once dependencies arrive
     if (_seededDefaults) return;
     _seededDefaults = true;
     _reminderMinutes = widget.habit?.reminderMinutes ??

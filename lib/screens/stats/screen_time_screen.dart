@@ -83,6 +83,7 @@ class _ScreenTimeScreenState extends State<ScreenTimeScreen>
   }
 
   Future<void> _loadApps({bool silent = false}) async {
+    // stale responses from a previous day's query get discarded
     final request = ++_appsRequest;
     final day = _selected;
     if (!silent && _apps != null) setState(() => _apps = null);
@@ -130,6 +131,7 @@ class _ScreenTimeScreenState extends State<ScreenTimeScreen>
       ...session.blockedApps,
     };
     final todaySeconds = _weekTotals?.last ?? 0;
+    // all zeros means usage access is missing, not that the phone sat untouched
     final gate = _weekTotals != null && _weekTotals!.every((t) => t == 0);
 
     return Scaffold(

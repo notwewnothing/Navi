@@ -18,6 +18,7 @@ class AlarmStore extends ChangeNotifier {
   static const _idKey = 'navi.alarms.nextId';
   static const _seenKey = 'navi.alarms.lastSeen';
 
+  // schedule-synced alarms get their own id range so they can never collide with user alarms
   static const scheduleIdBase = 500000;
 
   final AlarmScheduler? scheduler;
@@ -95,6 +96,7 @@ class AlarmStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // app was closed when an alarm fired, catch up on it once at startup
   void _reconcileMissedFires(DateTime lastSeen) {
     final now = _clock();
     for (final alarm in _alarms) {
@@ -119,6 +121,7 @@ class AlarmStore extends ChangeNotifier {
   void _onTick() {
     final now = _clock();
     final last = _lastTick ?? now;
+    // only tick when the minute changes so a single alarm can't fire twice
     if (now.minute == last.minute && now.hour == last.hour) return;
     _lastTick = now;
     _prefs?.setInt(_seenKey, now.millisecondsSinceEpoch);

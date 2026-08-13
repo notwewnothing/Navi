@@ -79,6 +79,7 @@ class AlarmBuzz {
 
   Future<void> _startPluginFallback() async {
     _cap?.cancel();
+    // hard cap on the plugin fallback, never let it vibrate forever
     _cap = Timer(const Duration(minutes: 10), stop);
 
     var hasVibrator = false;

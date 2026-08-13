@@ -122,6 +122,7 @@ class ScheduleStore extends ChangeNotifier {
     ),
   );
 
+  // alarm events are mirrored as real alarms so the ring flow stays in one place
   Future<void> _syncAlarms() async {
     final store = alarms;
     if (store == null) return;

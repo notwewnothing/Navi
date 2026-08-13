@@ -43,6 +43,7 @@ class DeviceUsage {
     }
   }
 
+  // using the phone more than the app itself counts as distraction
   static int computeDistractedSeconds({
     required int phoneUsageIncrease,
     required int inAppSeconds,

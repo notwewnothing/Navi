@@ -45,6 +45,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   String _dayLabel(DateTime day) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    // both normalized to midnight first so DST shifts can't skew the day count
     final diff = day.difference(today).inDays;
     return switch (diff) {
       0 => 'TODAY',

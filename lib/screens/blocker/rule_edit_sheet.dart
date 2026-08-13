@@ -33,6 +33,7 @@ class _RuleEditSheet extends StatefulWidget {
 class _RuleEditSheetState extends State<_RuleEditSheet> {
   late List<String> _packages = [...(widget.rule?.packages ?? const [])];
   late int _startMin = widget.rule?.startMin ?? 22 * 60;
+  // defaults to an overnight rule, endMin < startMin means it crosses midnight
   late int _endMin = widget.rule?.endMin ?? 6 * 60;
   late int _dayBits = widget.rule?.dayBits ?? 0x7f;
   late bool _enabled = widget.rule?.enabled ?? true;

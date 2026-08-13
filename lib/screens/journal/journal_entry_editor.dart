@@ -100,6 +100,7 @@ class _EntrySheetState extends State<_EntrySheet> {
     _captionController.dispose();
     _rec.dispose();
     final path = _recPath;
+    // the recorder may still be flushing the file after dispose, wait before deleting
     if (!_saved && path != null) {
       Future<void>.delayed(const Duration(milliseconds: 400), () async {
         try {
@@ -135,6 +136,7 @@ class _EntrySheetState extends State<_EntrySheet> {
           .listen((amp) {
         if (!mounted) return;
         setState(() {
+          // amplitudes come in as dB, +45 shifts silence to 0 before the 0-1 clamp
           _amps.add(((amp.current + 45) / 45).clamp(0.0, 1.0));
           if (_amps.length > 40) _amps.removeAt(0);
         });
@@ -450,6 +452,7 @@ class _TextEntryScreenState extends State<_TextEntryScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_autoSave == null) {
+      // degenerate setting guard, never autosave faster than 5 seconds
       final seconds = SettingsScope.of(context).autoSaveSeconds;
       _autoSave = Timer.periodic(
         Duration(seconds: seconds < 1 ? 5 : seconds),

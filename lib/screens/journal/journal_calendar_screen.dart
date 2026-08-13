@@ -158,6 +158,7 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
               Expanded(child: MediaImage(photos[2])),
               const SizedBox(width: 2),
               Expanded(
+                // a day's collage holds at most 4 photos, extras are dropped
                 child: photos.length > 3
                     ? MediaImage(photos[3])
                     : Container(color: p.panelHi),

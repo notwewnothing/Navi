@@ -11,6 +11,7 @@ class MediaStore {
   static Future<String> importFile(String sourcePath, {String? ext}) async {
     final docs = await _documents();
     final now = DateTime.now();
+    // media is bucketed by month so old files are easy to find and prune
     final month =
         '${now.year}-${now.month.toString().padLeft(2, '0')}';
     final dir = Directory('${docs.path}/media/$month');

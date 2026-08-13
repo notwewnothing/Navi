@@ -42,6 +42,7 @@ class AlarmBuzzService : Service() {
 
         private const val VIBRATE_FOR_MS = 10 * 60 * 1000L
 
+        // sound bursts at escalating offsets, quiet between them so it's an alarm not a loop
         private val PLAY_TARGETS = longArrayOf(
             0, 10_000, 20_000,
             50_000, 80_000, 110_000,
@@ -133,6 +134,7 @@ class AlarmBuzzService : Service() {
     override fun onCreate() {
         super.onCreate()
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        // partial wakelock so the alarm keeps buzzing with the screen off
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "navi:AlarmBuzz").apply {
             setReferenceCounted(false)
             acquire(12 * 60 * 60 * 1000L)

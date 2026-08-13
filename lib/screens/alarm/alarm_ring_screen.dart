@@ -34,8 +34,10 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
   DateTime _now = DateTime.now();
   String _wakeLine = EasterEggs.randomWakeLine();
 
+  // app-lifetime state so snooze taunts escalate across all ring instances
   static int _sessionSnoozes = 0;
 
+  // hard cap, the alarm never rings longer than 33 minutes
   static const _sequenceLength = Duration(minutes: 33);
 
   @override
@@ -79,6 +81,7 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
   void _rotateLine() {
     var next = EasterEggs.randomWakeLine();
     var guard = 0;
+    // avoid repeating the same wake line, give up after 8 tries
     while (next == _wakeLine && ++guard < 8) {
       next = EasterEggs.randomWakeLine();
     }

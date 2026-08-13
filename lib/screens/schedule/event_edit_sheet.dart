@@ -211,6 +211,7 @@ class _EventEditSheetState extends State<_EventEditSheet> {
   }
 
   String get _durationLabel {
+    // overnight events wrap around, a full day reads 24H not 0H
     var d = (_endMin - _startMin) % 1440;
     if (d == 0) d = 1440;
     final h = d ~/ 60;

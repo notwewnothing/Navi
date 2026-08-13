@@ -39,6 +39,7 @@ class SessionStore extends ChangeNotifier {
   int get focusedTodayMin => _today.focusMin;
   int get distractedTodayMin => _today.distractedMin;
 
+  // sleep is measured overnight, empty today means check yesterday
   int get sleepLastMin {
     final today = _today.sleepMin;
     if (today > 0) return today;
@@ -53,6 +54,7 @@ class SessionStore extends ChangeNotifier {
     return (distractedTodayMin / total * 100).round();
   }
 
+  // if today has no focus yet, count from yesterday so an early start doesn't reset the streak
   int get focusStreak {
     var day = _clock();
     var count = 0;

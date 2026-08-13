@@ -136,6 +136,7 @@ class _HabitRow extends StatelessWidget {
       },
       child: PixelCard(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        // tap edits, long-press checks in, no labels because the chrome is minimal
         onTap: () => showHabitEditSheet(context, habit: habit),
         onLongPress: () => Navigator.of(context).push(
           slideUpRoute(HabitCheckinScreen(habit: habit)),

@@ -14,6 +14,7 @@ object AlarmBuzzScheduler {
         val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pi = pendingIntent(context, requestCode, alarmId)
 
+        // no exact-alarm permission, fall back to best effort
         val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()
         if (canExact) {
             val show = context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {

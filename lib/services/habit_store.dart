@@ -174,6 +174,7 @@ class HabitStore extends ChangeNotifier {
     await _save();
     notifyListeners();
 
+    // true when this check-in completes every scheduled habit for the day
     final scheduled = enabledHabits.where((h) => h.scheduledOn(when));
     return scheduled.isNotEmpty && scheduled.every((h) => isDone(h, when));
   }

@@ -105,6 +105,7 @@ class BlockStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  // rules, schedule app-block events and sleep blocks all flatten into one native rule list
   Future<void> pushToNative() async {
     final encoded = <String>[
       for (final rule in _rules.where(

@@ -98,7 +98,8 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                       onTap: () {
                         HapticFeedback.selectionClick();
                         setState(() {
-                          if (!_selected.add(app.packageName)) {
+                          // Set.add returns false on duplicates, so this doubles as the toggle
+                        if (!_selected.add(app.packageName)) {
                             _selected.remove(app.packageName);
                           }
                         });

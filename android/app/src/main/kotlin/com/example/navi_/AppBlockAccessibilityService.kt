@@ -84,6 +84,7 @@ class AppBlockAccessibilityService : AccessibilityService(), SharedPreferences.O
         if (rules.isEmpty()) return false
         val cal = Calendar.getInstance()
         val nowMin = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
+        // Calendar.DAY_OF_WEEK is Sunday-based, remap to the Monday-based bits the rules use
         val todayBit = (cal.get(Calendar.DAY_OF_WEEK) + 5) % 7
         val yesterdayBit = (todayBit + 6) % 7
         for (rule in rules) {
@@ -94,6 +95,7 @@ class AppBlockAccessibilityService : AccessibilityService(), SharedPreferences.O
             val dayBits = parts[2].toIntOrNull() ?: continue
             val packages = parts[3].split(",")
             if (!packages.contains(packageName)) continue
+            // start > end means the rule crosses midnight, the early part matches yesterday's bits
             val active = if (start <= end) {
                 nowMin in start until end && (dayBits shr todayBit) and 1 == 1
             } else {

@@ -128,6 +128,7 @@ class NotificationService implements AlarmScheduler {
   Future<void> _resync() async {
     if (!_ready) return;
     try {
+      // simplest correct approach, wipe everything and rebuild from scratch
       await _plugin.cancelAll();
       await AlarmBuzz.cancelAllScheduled();
       for (final alarm in _alarms) {
@@ -148,6 +149,7 @@ class NotificationService implements AlarmScheduler {
 
     final now = DateTime.now();
     final snooze = alarm.snoozedUntil;
+    // snooze fires as its own notification, once alarms skip the regular schedule
     if (snooze != null && snooze.isAfter(now)) {
       await _zonedAlarm(
         id: alarm.id * 100 + 99,

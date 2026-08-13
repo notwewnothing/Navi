@@ -40,6 +40,7 @@ class _AppBlockScreenState extends State<AppBlockScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // accessibility state is cached at initState, re-evaluate when returning from system settings
     if (state == AppLifecycleState.resumed) {
       setState(() => _serviceOn = AppBlocker.isAccessibilityEnabled());
     }

@@ -262,6 +262,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   Widget _eventBlock(BuildContext context, ScheduleEvent e, int index) {
     final start = e.startMin;
     var end = e.endMin;
+    // alarms and zero-length events render as instant markers, overnight events stretch to midnight
     if (e.type == EventType.alarm || end == start) {
       end = start;
     } else if (end < start) {

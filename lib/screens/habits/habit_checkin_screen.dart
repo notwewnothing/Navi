@@ -41,6 +41,7 @@ class _HabitCheckinScreenState extends State<HabitCheckinScreen> {
       _noteController.text = log.note ?? '';
       if (log.photoPath != null) {
         MediaStore.fileFor(log.photoPath).then((file) {
+          // don't let the async photo restore clobber one the user picked since
           if (mounted && file != null && _photoRel == null) {
             setState(() => _photoFile = file);
           }
@@ -55,6 +56,7 @@ class _HabitCheckinScreenState extends State<HabitCheckinScreen> {
 
   @override
   void dispose() {
+    // abandoned check-ins delete the copied photo with the sheet
     if (!_committed && _photoRel != null) {
       MediaStore.delete(_photoRel);
     }

@@ -45,6 +45,7 @@ class _CommitmentBoardState extends State<CommitmentBoard>
     final now = DateTime.now();
     _today = DateTime(now.year, now.month, now.day);
     final thisMonday = _today.subtract(Duration(days: _today.weekday - 1));
+    // start at the Monday of the first week so columns always align to weeks
     _origin = thisMonday.subtract(Duration(days: 7 * (widget.weeks - 1)));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {

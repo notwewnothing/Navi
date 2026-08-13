@@ -192,6 +192,7 @@ class _JournalEntryViewState extends State<JournalEntryView> {
     if (video.value.isPlaying) {
       video.pause();
     } else {
+      // video sits at end of stream after finishing, rewind before replaying
       if (video.value.position >= video.value.duration) {
         video.seekTo(Duration.zero);
       }
@@ -244,6 +245,7 @@ class _JournalEntryViewState extends State<JournalEntryView> {
       return;
     }
     try {
+      // resume() before the first play() throws, so track whether playback ever started
       if (_audioStarted) {
         await player.resume();
       } else {
