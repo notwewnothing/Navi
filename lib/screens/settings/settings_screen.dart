@@ -4,6 +4,7 @@ import '../../services/settings_store.dart';
 import '../../theme/palette.dart';
 import '../../widgets/routes.dart';
 import '../blocker/app_block_screen.dart';
+import '../stats/screen_time_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -76,6 +77,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: () => Navigator.of(
                     context,
                   ).push(slideUpRoute(const AppBlockScreen())),
+                ),
+                _divider(p),
+                _row(
+                  p,
+                  glyph: '\u{25D0}',
+                  label: 'SCREEN TIME',
+                  onTap: () => Navigator.of(
+                    context,
+                  ).push(slideUpRoute(const ScreenTimeScreen())),
                 ),
               ],
             ),
