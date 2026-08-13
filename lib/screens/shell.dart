@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../services/sfx.dart';
 import '../theme/palette.dart';
 import '../widgets/pixel_icons.dart';
+import '../widgets/tactile.dart';
 
 import 'habits/habits_screen.dart';
 import 'home/home_screen.dart';
@@ -135,16 +136,3 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-class Tactile extends StatelessWidget {
-  const Tactile({
-    super.key,
-    required this.pressedScale,
-    required this.child,
-  });
-
-  final double pressedScale;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => child;
-}
