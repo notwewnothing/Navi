@@ -1,4 +1,4 @@
-package com.example.navi_
+package io.github.notwewnothing.navi
 
 import android.accessibilityservice.AccessibilityService
 import android.content.SharedPreferences

@@ -1,4 +1,4 @@
-package com.example.navi_
+package io.github.notwewnothing.navi
 
 import android.app.Notification
 import android.app.NotificationChannel
