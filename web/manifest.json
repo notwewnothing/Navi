@@ -1,6 +1,6 @@
 {
-    "name": "navi_",
-    "short_name": "navi_",
+    "name": "navi",
+    "short_name": "navi",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
