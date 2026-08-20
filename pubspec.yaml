@@ -48,6 +48,10 @@ flutter:
   assets:
     - assets/sounds/
   fonts:
+    # Nothing's dot-matrix display face. Body copy uses the system grotesque.
+    - family: Ndot
+      fonts:
+        - asset: assets/fonts/NOTHING.otf.ttf
     - family: PixelDisplay
       fonts:
         - asset: assets/fonts/PressStart2P-Regular.ttf
