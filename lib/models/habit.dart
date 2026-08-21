@@ -1,8 +1,8 @@
-
 class Habit {
   Habit({
     required this.id,
     required this.name,
+    this.description = '',
     this.icon = 'flame',
     this.requirePhoto = false,
     this.reminderMinutes,
@@ -14,6 +14,7 @@ class Habit {
 
   final int id;
   String name;
+  String description;
   String icon;
   bool requirePhoto;
   int? reminderMinutes;
@@ -28,6 +29,7 @@ class Habit {
   Map<String, Object?> toJson() => {
     'id': id,
     'name': name,
+    'description': description,
     'icon': icon,
     'requirePhoto': requirePhoto,
     'reminderMinutes': reminderMinutes,
@@ -40,6 +42,8 @@ class Habit {
   static Habit fromJson(Map<String, Object?> json) => Habit(
     id: json['id'] as int,
     name: json['name'] as String? ?? 'HABIT',
+    // absent on saves written before descriptions existed, so default to empty
+    description: json['description'] as String? ?? '',
     icon: json['icon'] as String? ?? 'flame',
     requirePhoto: json['requirePhoto'] as bool? ?? false,
     reminderMinutes: json['reminderMinutes'] as int?,
@@ -86,6 +90,29 @@ class HabitLog {
     note: json['note'] as String?,
     at: DateTime.fromMillisecondsSinceEpoch(json['at'] as int? ?? 0),
   );
+}
+
+const _dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/// Human-readable schedule, e.g. "Every day · 09:00" or "Mon Wed Fri".
+/// Doubles as the fallback subtitle for habits with no description.
+String habitScheduleLabel(Habit habit, {bool withReminder = true}) {
+  final bits = habit.dayBits & 0x7f;
+  final schedule = switch (bits) {
+    0x7f => 'Every day',
+    0x1f => 'Weekdays',
+    0x60 => 'Weekends',
+    0 => 'Not scheduled',
+    _ => [
+      for (var i = 0; i < 7; i++)
+        if ((bits >> i) & 1 == 1) _dayNames[i],
+    ].join(' '),
+  };
+  final r = habit.reminderMinutes;
+  if (!withReminder || r == null) return schedule;
+  final hh = (r ~/ 60).toString().padLeft(2, '0');
+  final mm = (r % 60).toString().padLeft(2, '0');
+  return '$schedule · $hh:$mm';
 }
 
 // YYYY-MM-DD keys so logs sort lexicographically, don't change the format or old saves break

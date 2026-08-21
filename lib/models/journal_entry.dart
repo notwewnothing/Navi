@@ -2,10 +2,10 @@ enum JournalType { text, photo, video, audio }
 
 extension JournalTypeLabel on JournalType {
   String get label => switch (this) {
-    JournalType.text => 'TEXT',
-    JournalType.photo => 'PHOTO',
-    JournalType.video => 'VIDEO',
-    JournalType.audio => 'AUDIO',
+    JournalType.text => 'Text',
+    JournalType.photo => 'Photo',
+    JournalType.video => 'Video',
+    JournalType.audio => 'Voice note',
   };
 }
 

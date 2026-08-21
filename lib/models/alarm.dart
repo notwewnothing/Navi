@@ -2,10 +2,10 @@ enum AlarmRepeat { once, daily, weekdays, custom }
 
 extension AlarmRepeatLabel on AlarmRepeat {
   String get label => switch (this) {
-    AlarmRepeat.once => 'ONCE',
-    AlarmRepeat.daily => 'DAILY',
-    AlarmRepeat.weekdays => 'WEEKDAYS',
-    AlarmRepeat.custom => 'CUSTOM',
+    AlarmRepeat.once => 'Once',
+    AlarmRepeat.daily => 'Daily',
+    AlarmRepeat.weekdays => 'Weekdays',
+    AlarmRepeat.custom => 'Custom',
   };
 }
 
@@ -14,7 +14,7 @@ class Alarm {
     required this.id,
     required this.hour,
     required this.minute,
-    this.label = 'WAKE UP',
+    this.label = 'Wake up',
     this.snoozeMinutes = 10,
     this.repeat = AlarmRepeat.once,
     this.dayBits = 0,
@@ -30,12 +30,10 @@ class Alarm {
   int snoozeMinutes;
   AlarmRepeat repeat;
 
-
   // dayBits bit 0 = Monday ... bit 6 = Sunday 0x7f = every day
   int dayBits;
   bool enabled;
   DateTime? snoozedUntil;
-
 
   bool fromSchedule;
 

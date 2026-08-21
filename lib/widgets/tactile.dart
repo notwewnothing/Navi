@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 
-
 class Tactile extends StatefulWidget {
   const Tactile({super.key, required this.child, this.pressedScale = 0.96});
 

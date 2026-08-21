@@ -2,11 +2,11 @@ enum EventType { focus, sleep, alarm, appBlock, custom }
 
 extension EventTypeLabel on EventType {
   String get label => switch (this) {
-    EventType.focus => 'FOCUS',
-    EventType.sleep => 'SLEEP',
-    EventType.alarm => 'ALARM',
-    EventType.appBlock => 'APP BLOCK',
-    EventType.custom => 'CUSTOM',
+    EventType.focus => 'Focus',
+    EventType.sleep => 'Sleep',
+    EventType.alarm => 'Alarm',
+    EventType.appBlock => 'App block',
+    EventType.custom => 'Custom',
   };
 }
 
@@ -14,10 +14,10 @@ enum EventRepeat { never, daily, weekdays, custom }
 
 extension EventRepeatLabel on EventRepeat {
   String get label => switch (this) {
-    EventRepeat.never => 'NEVER',
-    EventRepeat.daily => 'DAILY',
-    EventRepeat.weekdays => 'WEEKDAYS',
-    EventRepeat.custom => 'CUSTOM',
+    EventRepeat.never => 'Once',
+    EventRepeat.daily => 'Daily',
+    EventRepeat.weekdays => 'Weekdays',
+    EventRepeat.custom => 'Custom',
   };
 }
 
@@ -76,8 +76,7 @@ class ScheduleEvent {
     EventRepeat.custom => dayBits,
   };
 
-  String get timeLabel =>
-      '${_fmt(startMin)} — ${_fmt(endMin)}';
+  String get timeLabel => '${_fmt(startMin)} — ${_fmt(endMin)}';
 
   static String _fmt(int min) =>
       '${(min ~/ 60).toString().padLeft(2, '0')}:${(min % 60).toString().padLeft(2, '0')}';

@@ -201,20 +201,15 @@ class NotificationService implements AlarmScheduler {
     final now = DateTime.now();
     for (var day = DateTime.monday; day <= DateTime.sunday; day++) {
       if ((habit.dayBits >> (day - 1)) & 1 == 0) continue;
-      final at = _nextWallClockOnWeekday(
-        now,
-        minutes ~/ 60,
-        minutes % 60,
-        day,
-      );
+      final at = _nextWallClockOnWeekday(now, minutes ~/ 60, minutes % 60, day);
       try {
         await _plugin.zonedSchedule(
           id: _habitIdBase + habit.id * 100 + day,
           scheduledDate: tz.TZDateTime.from(at, tz.local),
           notificationDetails: _habitDetails,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          title: habit.name.toUpperCase(),
-          body: 'Check in. Present day, present time.',
+          title: habit.name,
+          body: 'Time to check in.',
           payload: 'habit:${habit.id}',
           matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
         );
@@ -255,8 +250,8 @@ class NotificationService implements AlarmScheduler {
       scheduledDate: tz.TZDateTime.from(at, tz.local),
       notificationDetails: _alarmDetails,
       androidScheduleMode: AndroidScheduleMode.alarmClock,
-      title: title ?? 'ALARM — ${alarm.timeLabel24}',
-      body: '${alarm.label} • WAKE UP, LAIN.',
+      title: title ?? 'Alarm · ${alarm.timeLabel24}',
+      body: '${alarm.label} · Time to get up.',
       payload: 'alarm:${alarm.id}',
       matchDateTimeComponents: match,
     );

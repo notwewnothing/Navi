@@ -144,7 +144,7 @@ class AlarmStore extends ChangeNotifier {
   Future<Alarm> add({
     required int hour,
     required int minute,
-    String label = 'WAKE UP',
+    String label = 'Wake up',
     int snoozeMinutes = 10,
     AlarmRepeat repeat = AlarmRepeat.once,
     int dayBits = 0,
@@ -205,9 +205,7 @@ class AlarmStore extends ChangeNotifier {
 
   Future<void> syncScheduleAlarms(List<Alarm> desired) async {
     final desiredIds = {for (final a in desired) a.id};
-    _alarms.removeWhere(
-      (a) => a.fromSchedule && !desiredIds.contains(a.id),
-    );
+    _alarms.removeWhere((a) => a.fromSchedule && !desiredIds.contains(a.id));
     for (final want in desired) {
       final existing = byId(want.id);
       if (existing == null) {

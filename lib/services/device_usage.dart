@@ -22,7 +22,7 @@ class DeviceUsage {
   }
 
   static Future<List<({String appName, String packageName, int seconds})>>
-      appUsageSeconds(DateTime start, DateTime end) async {
+  appUsageSeconds(DateTime start, DateTime end) async {
     if (!isSupported) return [];
     try {
       final infoList = await AppUsage().getAppUsage(start, end);

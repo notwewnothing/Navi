@@ -12,8 +12,7 @@ class MediaStore {
     final docs = await _documents();
     final now = DateTime.now();
     // media is bucketed by month so old files are easy to find and prune
-    final month =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    final month = '${now.year}-${now.month.toString().padLeft(2, '0')}';
     final dir = Directory('${docs.path}/media/$month');
     await dir.create(recursive: true);
     final extension = ext ?? sourcePath.split('.').last;
@@ -25,8 +24,7 @@ class MediaStore {
   static Future<String> newRecordingPath(String ext) async {
     final docs = await _documents();
     final now = DateTime.now();
-    final month =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    final month = '${now.year}-${now.month.toString().padLeft(2, '0')}';
     final dir = Directory('${docs.path}/media/$month');
     await dir.create(recursive: true);
     return '${dir.path}/${now.millisecondsSinceEpoch}.$ext';

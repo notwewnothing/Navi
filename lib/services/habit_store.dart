@@ -69,9 +69,9 @@ class HabitStore extends ChangeNotifier {
     }
   }
 
-
   Future<Habit> addHabit({
     required String name,
+    String description = '',
     String icon = 'flame',
     bool requirePhoto = false,
     int? reminderMinutes,
@@ -81,6 +81,7 @@ class HabitStore extends ChangeNotifier {
     final habit = Habit(
       id: _nextId++,
       name: name,
+      description: description,
       icon: icon,
       requirePhoto: requirePhoto,
       reminderMinutes: reminderMinutes,
@@ -134,7 +135,6 @@ class HabitStore extends ChangeNotifier {
     await _syncReminders();
     notifyListeners();
   }
-
 
   HabitLog? logFor(Habit habit, DateTime day) =>
       _byDay[dayKeyOf(day)]?[habit.id];
@@ -190,7 +190,6 @@ class HabitStore extends ChangeNotifier {
     notifyListeners();
   }
 
-
   int streak(Habit habit) {
     var day = DateTime.now();
     var count = 0;
@@ -230,15 +229,13 @@ class HabitStore extends ChangeNotifier {
   }
 
   List<HabitLog> photoLogsForDay(DateTime day) => List.unmodifiable(
-    (_byDay[dayKeyOf(day)]?.values ?? const <HabitLog>[])
-        .where((l) => l.photoPath != null),
+    (_byDay[dayKeyOf(day)]?.values ?? const <HabitLog>[]).where(
+      (l) => l.photoPath != null,
+    ),
   );
 
   Future<void> _syncReminders() async {
-    await notifications?.syncHabits(
-      enabledHabits,
-      enabled: _remindersEnabled,
-    );
+    await notifications?.syncHabits(enabledHabits, enabled: _remindersEnabled);
   }
 
   String exportJson() => jsonEncode({

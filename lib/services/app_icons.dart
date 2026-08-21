@@ -8,10 +8,9 @@ class AppIcons {
   static Future<Uint8List?> getIcon(String packageName) async {
     if (_cache.containsKey(packageName)) return _cache[packageName];
     try {
-      final bytes = await _channel.invokeMethod<Uint8List>(
-        'getAppIcon',
-        {'packageName': packageName},
-      );
+      final bytes = await _channel.invokeMethod<Uint8List>('getAppIcon', {
+        'packageName': packageName,
+      });
       _cache[packageName] = bytes;
       return bytes;
     } catch (_) {

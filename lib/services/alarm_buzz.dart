@@ -4,9 +4,20 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:vibration/vibration.dart';
 
-final Int64List notificationVibrationPattern = Int64List.fromList(
-  [0, 1200, 90, 300, 80, 300, 80, 300, 80, 300, 80, 900],
-);
+final Int64List notificationVibrationPattern = Int64List.fromList([
+  0,
+  1200,
+  90,
+  300,
+  80,
+  300,
+  80,
+  300,
+  80,
+  300,
+  80,
+  900,
+]);
 
 const _channel = MethodChannel('navi/alarm_buzz');
 

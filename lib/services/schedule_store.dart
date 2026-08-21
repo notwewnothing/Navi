@@ -34,8 +34,7 @@ class ScheduleStore extends ChangeNotifier {
           ..clear()
           ..addAll(
             (data['events'] as List? ?? []).map(
-              (e) =>
-                  ScheduleEvent.fromJson((e as Map).cast<String, Object?>()),
+              (e) => ScheduleEvent.fromJson((e as Map).cast<String, Object?>()),
             ),
           );
         _nextId = data['nextId'] as int? ?? 1;
@@ -109,8 +108,9 @@ class ScheduleStore extends ChangeNotifier {
     return List.unmodifiable(result);
   }
 
-  Set<EventType> typesOn(DateTime day) =>
-      {for (final e in _events.where((e) => e.occursOn(day))) e.type};
+  Set<EventType> typesOn(DateTime day) => {
+    for (final e in _events.where((e) => e.occursOn(day))) e.type,
+  };
 
   List<ScheduleEvent> get sleepEvents => List.unmodifiable(
     _events.where((e) => e.enabled && e.type == EventType.sleep),
@@ -148,8 +148,9 @@ class ScheduleStore extends ChangeNotifier {
     await store.syncScheduleAlarms(desired);
   }
 
-  String exportJson() =>
-      jsonEncode({'events': [for (final e in _events) e.toJson()]});
+  String exportJson() => jsonEncode({
+    'events': [for (final e in _events) e.toJson()],
+  });
 
   Future<void> _save() async {
     try {

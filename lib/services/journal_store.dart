@@ -81,9 +81,7 @@ class JournalStore extends ChangeNotifier {
 
   List<JournalEntry> entriesForDay(DateTime day) {
     final key = dayKeyOf(day);
-    return List.unmodifiable(
-      _entries.where((e) => dayKeyOf(e.at) == key),
-    );
+    return List.unmodifiable(_entries.where((e) => dayKeyOf(e.at) == key));
   }
 
   bool hasEntryOn(DateTime day) {
@@ -103,8 +101,9 @@ class JournalStore extends ChangeNotifier {
     );
   }
 
-  String exportJson() =>
-      jsonEncode({'entries': [for (final e in _entries) e.toJson()]});
+  String exportJson() => jsonEncode({
+    'entries': [for (final e in _entries) e.toJson()],
+  });
 
   Future<void> _save() async {
     try {

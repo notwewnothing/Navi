@@ -14,7 +14,6 @@ import 'services/session_store.dart';
 import 'services/settings_store.dart';
 import 'services/sfx.dart';
 import 'theme/palette.dart';
-import 'widgets/glitch.dart';
 import 'widgets/routes.dart';
 
 void main() {
@@ -143,16 +142,13 @@ class _NaviAppState extends State<NaviApp> {
                           debugShowCheckedModeBanner: false,
                           navigatorKey: _navigator,
                           theme: palette.toThemeData(),
-                          builder: (context, child) => ScanlineOverlay(
-                            enabled: _settings.scanlinesEnabled,
-                            child: MediaQuery(
-                              data: MediaQuery.of(context).copyWith(
-                                textScaler: TextScaler.linear(
-                                  _settings.fontScale,
-                                ),
+                          builder: (context, child) => MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              textScaler: TextScaler.linear(
+                                _settings.fontScale,
                               ),
-                              child: child ?? const SizedBox.shrink(),
                             ),
+                            child: child ?? const SizedBox.shrink(),
                           ),
                           home: const SplashScreen(),
                         ),
