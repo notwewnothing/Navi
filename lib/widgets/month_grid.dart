@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../services/sfx.dart';
 import '../theme/palette.dart';
-import 'pixel_icons.dart';
-import 'pixel_widgets.dart';
+import 'nd_icons.dart';
+import 'nd_widgets.dart';
 import 'tactile.dart';
 
 class MonthGrid extends StatelessWidget {
@@ -24,8 +24,18 @@ class MonthGrid extends StatelessWidget {
   final double cellAspect;
 
   static const _months = [
-    'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-    'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   static const _dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -50,30 +60,36 @@ class MonthGrid extends StatelessWidget {
       children: [
         Row(
           children: [
-            PixelIconButton(glyph: Px.left, onTap: () => _shift(-1)),
+            NdIconButton(
+              glyph: Nd.left,
+              tooltip: 'Previous month',
+              onTap: () => _shift(-1),
+            ),
             Expanded(
               child: Center(
                 child: Text(
                   '${_months[month.month - 1]} ${month.year}',
-                  style: p.h2.copyWith(color: p.text),
+                  style: p.title,
                 ),
               ),
             ),
-            PixelIconButton(glyph: Px.right, onTap: () => _shift(1)),
+            NdIconButton(
+              glyph: Nd.right,
+              tooltip: 'Next month',
+              onTap: () => _shift(1),
+            ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: NdSpace.md),
         Row(
           children: [
             for (final label in _dayLabels)
               Expanded(
-                child: Center(
-                  child: Text(label, style: p.label.copyWith(fontSize: 6)),
-                ),
+                child: Center(child: Text(label, style: p.micro)),
               ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: NdSpace.sm),
         for (var week = 0; week < totalCells ~/ 7; week++) ...[
           Row(
             children: [
@@ -105,18 +121,15 @@ class MonthGrid extends StatelessWidget {
                               },
                               child: Container(
                                 decoration: BoxDecoration(
-                                  border: isToday
-                                      ? Border.all(
-                                          color: p.accent,
-                                          width: 1.5,
-                                        )
-                                      : Border.all(
-                                          color: p.border.withValues(
-                                            alpha: 0.5,
-                                          ),
-                                        ),
+                                  borderRadius: BorderRadius.circular(
+                                    NdRadius.small,
+                                  ),
+                                  border: Border.all(
+                                    color: isToday ? p.accent : p.border,
+                                    width: isToday ? 1.5 : 1,
+                                  ),
                                 ),
-                                clipBehavior: Clip.hardEdge,
+                                clipBehavior: Clip.antiAlias,
                                 child: cellBuilder(context, day),
                               ),
                             ),

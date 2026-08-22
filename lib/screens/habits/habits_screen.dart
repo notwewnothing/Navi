@@ -5,9 +5,10 @@ import '../../models/habit.dart';
 import '../../services/habit_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import '../../widgets/routes.dart';
+import '../shell.dart';
 import 'habit_checkin_screen.dart';
 import 'habit_edit_sheet.dart';
 
@@ -16,7 +17,6 @@ class HabitsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
     final store = HabitScope.of(context);
     final habits = store.habits;
     return Scaffold(
@@ -24,26 +24,31 @@ class HabitsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            PixelHeader(
-              title: 'HABITS',
-              actions: [
-                if (habits.isNotEmpty)
-                  Text(
-                    '${store.enabledHabits.length} ACTIVE',
-                    style: p.label.copyWith(color: p.accentMid),
-                  ),
-              ],
+            NdHeader(
+              title: 'Habits',
+              subtitle: habits.isEmpty
+                  ? null
+                  : '${store.enabledHabits.length} active of ${habits.length}',
             ),
             Expanded(
               child: habits.isEmpty
-                  ? const EmptyState(
-                      message: 'You have no habits... are you really here?',
-                      glyph: Px.grid,
+                  ? EmptyState(
+                      message:
+                          'No habits yet.\nStart with one you can do daily.',
+                      glyph: Nd.grid,
+                      actionLabel: 'Add a habit',
+                      onAction: () => showHabitEditSheet(context),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 6, 20, 96),
+                      padding: const EdgeInsets.fromLTRB(
+                        NdSpace.page,
+                        NdSpace.xs,
+                        NdSpace.page,
+                        kNavContentInset,
+                      ),
                       itemCount: habits.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: NdSpace.md),
                       itemBuilder: (context, i) => _Reveal(
                         index: i,
                         child: _HabitRow(habit: habits[i]),
@@ -52,9 +57,6 @@ class HabitsScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
-      floatingActionButton: PixelFab(
-        onTap: () => showHabitEditSheet(context),
       ),
     );
   }
@@ -65,43 +67,18 @@ class _HabitRow extends StatelessWidget {
 
   final Habit habit;
 
-  static const _dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-
-  String get _meta {
-    final bits = habit.dayBits & 0x7f;
-    final schedule = switch (bits) {
-      0x7f => 'EVERY DAY',
-      0x1f => 'WEEKDAYS',
-      0x60 => 'WEEKENDS',
-      0 => 'UNSCHEDULED',
-      _ => [
-        for (var i = 0; i < 7; i++)
-          if ((bits >> i) & 1 == 1) _dayNames[i],
-      ].join(' '),
-    };
-    final r = habit.reminderMinutes;
-    if (r == null) return schedule;
-    final hh = (r ~/ 60).toString().padLeft(2, '0');
-    final mm = (r % 60).toString().padLeft(2, '0');
-    return '$schedule / $hh:$mm';
-  }
-
   Future<bool> _confirmDelete(BuildContext context) async {
-    final p = context.palette;
-    final confirmed = await showPixelDialog<bool>(
+    final confirmed = await showNdDialog<bool>(
       context: context,
-      title: 'DELETE HABIT?',
+      title: 'Delete "${habit.name}"?',
       builder: (context) => Text(
-        'ITS LOG VANISHES FROM THE WIRED.',
-        style: p.body,
+        'Its full check-in history goes with it. This cannot be undone.',
+        style: context.palette.bodyDim,
       ),
       actions: (context) => [
+        DialogAction(label: 'Keep', onTap: () => Navigator.pop(context, false)),
         DialogAction(
-          label: 'KEEP',
-          onTap: () => Navigator.pop(context, false),
-        ),
-        DialogAction(
-          label: 'DELETE',
+          label: 'Delete',
           danger: true,
           onTap: () => Navigator.pop(context, true),
         ),
@@ -120,86 +97,94 @@ class _HabitRow extends StatelessWidget {
       key: ValueKey('habit-${habit.id}'),
       direction: DismissDirection.endToStart,
       background: Container(
-        color: p.danger,
+        decoration: BoxDecoration(
+          color: p.danger,
+          borderRadius: BorderRadius.circular(NdRadius.card),
+        ),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 22),
-        child: const PixelIcon(Px.trash, color: Colors.black, size: 20),
+        padding: const EdgeInsets.only(right: NdSpace.xl),
+        child: const NdIcon(Nd.trash, color: Colors.white, size: 22),
       ),
       confirmDismiss: (_) {
         HapticFeedback.mediumImpact();
         return _confirmDelete(context);
       },
       onDismissed: (_) {
-        Sfx.glitch();
+        Sfx.tick();
         store.removeHabit(habit);
-        showPixelToast(context, 'ERASED FROM THE WIRED', glyph: Px.trash);
+        showNdToast(context, 'Habit deleted', glyph: Nd.trash);
       },
-      child: PixelCard(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: NdCard(
+        padding: const EdgeInsets.all(NdSpace.lg),
         // tap edits, long-press checks in, no labels because the chrome is minimal
         onTap: () => showHabitEditSheet(context, habit: habit),
-        onLongPress: () => Navigator.of(context).push(
-          slideUpRoute(HabitCheckinScreen(habit: habit)),
-        ),
+        onLongPress: () => Navigator.of(
+          context,
+        ).push(slideUpRoute(HabitCheckinScreen(habit: habit))),
         child: Row(
           children: [
-            PixelIcon(
-              Px.habitIcon(habit.icon),
-              color: habit.enabled ? dotColor : p.textGhost,
-              size: 22,
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: p.panelHi,
+                border: Border.all(color: p.border),
+              ),
+              child: Center(
+                child: NdIcon(
+                  Nd.habitIcon(habit.icon),
+                  color: habit.enabled ? dotColor : p.textGhost,
+                  size: 20,
+                ),
+              ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: NdSpace.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    habit.name.toUpperCase(),
+                    habit.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: p.row.copyWith(
-                      fontSize: 22,
                       color: habit.enabled ? p.text : p.textDim,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Row(
                     children: [
                       Flexible(
                         child: Text(
-                          _meta,
+                          habitScheduleLabel(habit),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: p.label,
                         ),
                       ),
                       if (habit.requirePhoto) ...[
-                        const SizedBox(width: 6),
-                        PixelIcon(Px.camera, color: p.textGhost, size: 10),
+                        const SizedBox(width: NdSpace.sm),
+                        NdIcon(Nd.camera, color: p.textGhost, size: 13),
                       ],
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 10),
-            PixelIcon(
-              Px.flame,
-              color: streak > 0 ? p.accentMid : p.textGhost,
-              size: 12,
+            const SizedBox(width: NdSpace.sm),
+            NdIcon(
+              Nd.flame,
+              color: streak > 0 ? p.accent : p.textGhost,
+              size: 16,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: NdSpace.xs),
             Text(
               '$streak',
-              style: TextStyle(
-                fontFamily: kFontTerminal,
-                fontSize: 20,
-                height: 1,
-                color: streak > 0 ? p.accentMid : p.textGhost,
-              ),
+              style: p.dot(18, color: streak > 0 ? p.accent : p.textGhost),
             ),
-            const SizedBox(width: 12),
-            PixelSwitch(
+            const SizedBox(width: NdSpace.sm),
+            NdSwitch(
               value: habit.enabled,
               onChanged: (_) => store.toggleHabit(habit),
             ),

@@ -25,8 +25,9 @@ class CommitmentBoard extends StatefulWidget {
 class _CommitmentBoardState extends State<CommitmentBoard>
     with SingleTickerProviderStateMixin {
   static const _cell = 15.0;
-  static const _gap = 3.0;
-  static const _monthLabelH = 14.0;
+  static const _gap = 4.0;
+  static const _monthLabelH = 16.0;
+  static const _radius = Radius.circular(4);
 
   final _scroll = ScrollController();
   late final AnimationController _pulse = AnimationController(
@@ -99,8 +100,9 @@ class _CommitmentBoardState extends State<CommitmentBoard>
                             ? Text(
                                 const ['M', '', 'W', '', 'F', '', 'S'][r],
                                 style: TextStyle(
-                                  fontFamily: kFontPixel,
-                                  fontSize: 6,
+                                  fontFamily: kFontUI,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
                                   color: p.textGhost,
                                 ),
                               )
@@ -134,6 +136,7 @@ class _CommitmentBoardState extends State<CommitmentBoard>
                           cell: _cell,
                           gap: _gap,
                           monthLabelH: _monthLabelH,
+                          radius: _radius,
                         ),
                       ),
                     ),
@@ -154,15 +157,15 @@ class _CommitmentBoardState extends State<CommitmentBoard>
                   child: Row(
                     children: [
                       Container(
-                        width: 8,
-                        height: 8,
-                        color: p.boardLevel(widget.levelFor(_selected!)),
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: p.boardLevel(widget.levelFor(_selected!)),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _tooltipLabel(_selected!),
-                        style: p.label.copyWith(color: p.textDim),
-                      ),
+                      const SizedBox(width: NdSpace.sm),
+                      Text(_tooltipLabel(_selected!), style: p.label),
                     ],
                   ),
                 ),
@@ -173,18 +176,27 @@ class _CommitmentBoardState extends State<CommitmentBoard>
 
   String _tooltipLabel(DateTime day) {
     const months = [
-      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final count = widget.countFor(day);
-    final date =
-        '${months[day.month - 1]} ${day.day.toString().padLeft(2, '0')} ${day.year}';
+    final date = '${day.day} ${months[day.month - 1]} ${day.year}';
     final what = count == 0
-        ? 'NO SIGNAL'
+        ? 'no check-ins'
         : count == 1
-        ? '1 CHECK-IN'
-        : '$count CHECK-INS';
-    return '$date — $what';
+        ? '1 check-in'
+        : '$count check-ins';
+    return '$date · $what';
   }
 }
 
@@ -200,6 +212,7 @@ class _BoardPainter extends CustomPainter {
     required this.cell,
     required this.gap,
     required this.monthLabelH,
+    required this.radius,
   });
 
   final NaviPalette palette;
@@ -212,10 +225,21 @@ class _BoardPainter extends CustomPainter {
   final double cell;
   final double gap;
   final double monthLabelH;
+  final Radius radius;
 
   static const _months = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
   ];
 
   @override
@@ -233,8 +257,10 @@ class _BoardPainter extends CustomPainter {
             text: TextSpan(
               text: _months[weekStart.month - 1],
               style: TextStyle(
-                fontFamily: kFontPixel,
-                fontSize: 6,
+                fontFamily: kFontUI,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
                 color: palette.textGhost,
               ),
             ),
@@ -261,14 +287,20 @@ class _BoardPainter extends CustomPainter {
             0.35 + 0.4 * pulse,
           )!;
         }
-        canvas.drawRect(rect, paint);
+        canvas.drawRRect(RRect.fromRectAndRadius(rect, radius), paint);
 
         if (isToday) {
           final halo = Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1.6
             ..color = palette.accent.withValues(alpha: 0.35 + 0.55 * pulse);
-          canvas.drawRect(rect.inflate(2.2), halo);
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(
+              rect.inflate(2.4),
+              radius + const Radius.circular(2),
+            ),
+            halo,
+          );
         }
 
         if (selected == day) {
@@ -276,7 +308,13 @@ class _BoardPainter extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1.4
             ..color = palette.text;
-          canvas.drawRect(rect.inflate(1.2), sel);
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(
+              rect.inflate(1.4),
+              radius + const Radius.circular(1),
+            ),
+            sel,
+          );
         }
       }
     }
@@ -288,4 +326,3 @@ class _BoardPainter extends CustomPainter {
       old.selected != selected ||
       old.palette.accentRamp != palette.accentRamp;
 }
-

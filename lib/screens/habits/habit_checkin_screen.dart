@@ -10,8 +10,8 @@ import '../../services/media_store.dart';
 import '../../services/settings_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 
 class HabitCheckinScreen extends StatefulWidget {
   const HabitCheckinScreen({super.key, required this.habit});
@@ -101,16 +101,9 @@ class _HabitCheckinScreenState extends State<HabitCheckinScreen> {
       note: note.isEmpty ? null : note,
     );
     if (!mounted) return;
+    Sfx.complete();
     if (allDone) {
-      Sfx.knf();
-      final lain = store.todayTotal() >= 7;
-      showPixelToast(
-        context,
-        lain ? "Let's all love Lain" : 'ALL SIGNALS RECEIVED TODAY',
-        glyph: lain ? Px.heart : Px.check,
-      );
-    } else {
-      Sfx.complete();
+      showNdToast(context, 'Every habit done today', glyph: Nd.check);
     }
     Navigator.pop(context);
   }
@@ -142,61 +135,79 @@ class _HabitCheckinScreenState extends State<HabitCheckinScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            PixelHeader(
-              title: habit.name.toUpperCase(),
-              leading: PixelIconButton(
-                glyph: Px.left,
+            NdHeader(
+              title: habit.name,
+              leading: NdIconButton(
+                glyph: Nd.left,
                 onTap: () => Navigator.pop(context),
               ),
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                padding: const EdgeInsets.fromLTRB(
+                  NdSpace.page,
+                  NdSpace.sm,
+                  NdSpace.page,
+                  NdSpace.md,
+                ),
                 children: [
                   _Reveal(
                     index: 0,
                     child: Column(
                       children: [
-                        const SizedBox(height: 8),
+                        const SizedBox(height: NdSpace.sm),
                         TweenAnimationBuilder<double>(
                           tween: Tween(begin: 0.6, end: 1),
                           duration: const Duration(milliseconds: 400),
                           curve: Curves.easeOutCubic,
                           builder: (context, t, child) =>
                               Transform.scale(scale: t, child: child),
-                          child: PixelIcon(
-                            Px.habitIcon(habit.icon),
-                            color: dotColor,
-                            size: 44,
+                          child: Container(
+                            width: 88,
+                            height: 88,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: p.panel,
+                              border: Border.all(color: p.border),
+                            ),
+                            child: Center(
+                              child: NdIcon(
+                                Nd.habitIcon(habit.icon),
+                                color: dotColor,
+                                size: 40,
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: NdSpace.lg),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            PixelIcon(
-                              Px.flame,
-                              color: streak > 0 ? p.accentMid : p.textGhost,
-                              size: 12,
+                            NdIcon(
+                              Nd.flame,
+                              color: streak > 0 ? p.accent : p.textGhost,
+                              size: 16,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: NdSpace.sm),
                             Text(
-                              '$streak DAY STREAK',
+                              streak == 1
+                                  ? '1 day streak'
+                                  : '$streak day streak',
                               style: p.label.copyWith(
-                                color: streak > 0 ? p.accentMid : p.textDim,
+                                color: streak > 0 ? p.accent : p.textDim,
                               ),
                             ),
                           ],
                         ),
                         if (log != null) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: NdSpace.sm),
                           Text(
-                            'LOGGED TODAY ${_hhmm(log.at)}',
+                            'Checked in at ${_hhmm(log.at)}',
                             textAlign: TextAlign.center,
-                            style: p.labelAccent,
+                            style: p.label,
                           ),
                         ],
-                        const SizedBox(height: 20),
+                        const SizedBox(height: NdSpace.xl),
                       ],
                     ),
                   ),
@@ -210,15 +221,15 @@ class _HabitCheckinScreenState extends State<HabitCheckinScreen> {
                           habit.requirePhoto ? 'PHOTO PROOF' : 'PHOTO',
                           style: p.h2,
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: NdSpace.md),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 250),
                           switchInCurve: Curves.easeOutCubic,
                           child: _photoFile != null
-                              ? Container(
+                              ? ClipRRect(
                                   key: ValueKey(_photoFile!.path),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: p.borderHi),
+                                  borderRadius: BorderRadius.circular(
+                                    NdRadius.card,
                                   ),
                                   child: AspectRatio(
                                     aspectRatio: 4 / 3,
@@ -232,54 +243,58 @@ class _HabitCheckinScreenState extends State<HabitCheckinScreen> {
                               : habit.requirePhoto
                               ? Container(
                                   key: const ValueKey('placeholder'),
-                                  height: 110,
+                                  height: 120,
                                   decoration: BoxDecoration(
+                                    color: p.panel,
                                     border: Border.all(color: p.border),
+                                    borderRadius: BorderRadius.circular(
+                                      NdRadius.card,
+                                    ),
                                   ),
                                   child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      PixelIcon(
-                                        Px.camera,
+                                      NdIcon(
+                                        Nd.camera,
                                         color: p.textGhost,
-                                        size: 22,
+                                        size: 26,
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text('PROOF REQUIRED', style: p.label),
+                                      const SizedBox(height: NdSpace.sm),
+                                      Text(
+                                        'A photo is required for this habit',
+                                        style: p.label,
+                                      ),
                                     ],
                                   ),
                                 )
-                              : const SizedBox.shrink(
-                                  key: ValueKey('none'),
-                                ),
+                              : const SizedBox.shrink(key: ValueKey('none')),
                         ),
                         if (_photoFile != null || habit.requirePhoto)
-                          const SizedBox(height: 10),
+                          const SizedBox(height: NdSpace.md),
                         Row(
                           children: [
                             Expanded(
-                              child: PixelButton(
-                                label: 'CAMERA',
-                                glyph: Px.camera,
+                              child: NdButton(
+                                label: 'Camera',
+                                glyph: Nd.camera,
                                 expand: true,
-                                height: 46,
+                                height: 48,
                                 onTap: () => _pick(ImageSource.camera),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: NdSpace.md),
                             Expanded(
-                              child: PixelButton(
-                                label: 'GALLERY',
-                                glyph: Px.photo,
+                              child: NdButton(
+                                label: 'Gallery',
+                                glyph: Nd.photo,
                                 expand: true,
-                                height: 46,
+                                height: 48,
                                 onTap: () => _pick(ImageSource.gallery),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: NdSpace.xl),
                       ],
                     ),
                   ),
@@ -290,14 +305,11 @@ class _HabitCheckinScreenState extends State<HabitCheckinScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text('NOTE', style: p.h2),
-                        const SizedBox(height: 10),
-                        PixelCard(
-                          child: PixelTextField(
-                            controller: _noteController,
-                            hint: 'Leave a trace...',
-                            maxLines: 4,
-                            fontSize: 20,
-                          ),
+                        const SizedBox(height: NdSpace.md),
+                        NdTextField(
+                          controller: _noteController,
+                          hint: 'How did it go? (optional)',
+                          maxLines: 4,
                         ),
                       ],
                     ),
@@ -307,26 +319,40 @@ class _HabitCheckinScreenState extends State<HabitCheckinScreen> {
             ),
 
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
+              padding: const EdgeInsets.fromLTRB(
+                NdSpace.page,
+                NdSpace.sm,
+                NdSpace.page,
+                NdSpace.lg,
+              ),
               child: _Reveal(
                 index: 3,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    PixelButton(
-                      label: 'CONFIRM',
-                      glyph: Px.check,
+                    NdButton(
+                      label: log == null ? 'Check in' : 'Update check-in',
+                      glyph: Nd.check,
                       filled: true,
                       expand: true,
                       height: 56,
                       onTap: canConfirm ? _confirm : null,
                     ),
+                    if (!canConfirm)
+                      Padding(
+                        padding: const EdgeInsets.only(top: NdSpace.sm),
+                        child: Text(
+                          'Add a photo to check in',
+                          textAlign: TextAlign.center,
+                          style: p.label,
+                        ),
+                      ),
                     if (log != null)
                       Padding(
-                        padding: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.only(top: NdSpace.xs),
                         child: Center(
                           child: DialogAction(
-                            label: 'UNDO CHECK-IN',
+                            label: 'Undo check-in',
                             danger: true,
                             onTap: _undo,
                           ),
