@@ -7,14 +7,24 @@ import '../../services/journal_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
 import '../../widgets/month_grid.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import '../../widgets/routes.dart';
 import 'journal_entry_view.dart';
 
 const _monthsFull = [
-  'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-  'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 class JournalCalendarScreen extends StatefulWidget {
@@ -50,16 +60,22 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            PixelHeader(
-              title: 'ARCHIVE',
-              leading: PixelIconButton(
-                glyph: Px.left,
+            NdHeader(
+              title: 'Archive',
+              subtitle: 'Tap a day to see what you logged',
+              leading: NdIconButton(
+                glyph: Nd.left,
                 onTap: () => Navigator.pop(context),
               ),
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
+                padding: const EdgeInsets.fromLTRB(
+                  NdSpace.lg,
+                  NdSpace.xs,
+                  NdSpace.lg,
+                  NdSpace.xl,
+                ),
                 children: [
                   MonthGrid(
                     month: _month,
@@ -90,15 +106,22 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
       final hasAny =
           journal.hasEntryOn(day) || habits.logsForDay(day).isNotEmpty;
       return Container(
-        color: p.panelHi,
+        color: p.panel,
         child: Stack(
           children: [
             _dayTag(p, day.day, onPhoto: false),
             if (hasAny)
               Positioned(
-                right: 3,
-                bottom: 3,
-                child: Container(width: 4, height: 4, color: p.accentDim),
+                right: 5,
+                bottom: 5,
+                child: Container(
+                  width: 5,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: p.accent,
+                    shape: BoxShape.circle,
+                  ),
+                ),
               ),
           ],
         ),
@@ -106,10 +129,7 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
     }
     return Stack(
       fit: StackFit.expand,
-      children: [
-        _collage(p, photos),
-        _dayTag(p, day.day, onPhoto: true),
-      ],
+      children: [_collage(p, photos), _dayTag(p, day.day, onPhoto: true)],
     );
   }
 
@@ -117,21 +137,27 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
     top: 0,
     left: 0,
     child: Container(
-      padding: const EdgeInsets.fromLTRB(3, 2, 4, 2),
-      color: onPhoto ? Colors.black.withValues(alpha: 0.6) : Colors.transparent,
+      padding: const EdgeInsets.fromLTRB(5, 3, 6, 3),
+      decoration: BoxDecoration(
+        color: onPhoto
+            ? Colors.black.withValues(alpha: 0.6)
+            : Colors.transparent,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(NdRadius.small),
+          bottomRight: Radius.circular(NdRadius.small),
+        ),
+      ),
       child: Text(
         '$day',
-        style: TextStyle(
-          fontFamily: kFontPixel,
-          fontSize: 6,
-          color: onPhoto ? p.text : p.textGhost,
-          height: 1.2,
-        ),
+        style: p.micro.copyWith(color: onPhoto ? Colors.white : p.textGhost),
       ),
     ),
   );
 
-  Widget _collage(NaviPalette p, List<String> photos) => switch (photos.length) {
+  Widget _collage(
+    NaviPalette p,
+    List<String> photos,
+  ) => switch (photos.length) {
     1 => MediaImage(photos[0]),
     2 => Column(
       children: [
@@ -161,7 +187,7 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
                 // a day's collage holds at most 4 photos, extras are dropped
                 child: photos.length > 3
                     ? MediaImage(photos[3])
-                    : Container(color: p.panelHi),
+                    : Container(color: p.panel),
               ),
             ],
           ),
@@ -170,12 +196,11 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
     ),
   };
 
-
   void _openDay(DateTime day) {
     final journal = JournalScope.of(context);
     final habits = HabitScope.of(context);
     final navigator = Navigator.of(context);
-    showPixelSheet<void>(
+    showNdSheet<void>(
       context: context,
       builder: (sheetContext) {
         final p = sheetContext.palette;
@@ -194,14 +219,9 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-                    child: Text(title, style: p.h2.copyWith(color: p.text)),
-                  ),
+                  NdSheetHeader(title: title),
                   const Expanded(
-                    child: EmptyState(
-                      message: 'Nothing was recorded. Did it happen?',
-                    ),
+                    child: EmptyState(message: 'Nothing logged on this day.'),
                   ),
                 ],
               ),
@@ -213,28 +233,43 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
           top: false,
           child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxHeight),
-            child: ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title, style: p.h2.copyWith(color: p.text)),
-                if (photos.isNotEmpty) ...[
-                  const SizedBox(height: 14),
-                  SizedBox(height: 260, child: _DayGallery(photos: photos)),
-                ],
-                if (entries.isNotEmpty) ...[
-                  const SizedBox(height: 18),
-                  Text('JOURNAL', style: p.h2),
-                  const SizedBox(height: 10),
-                  for (final entry in entries)
-                    _entryRow(sheetContext, navigator, entry),
-                ],
-                if (logs.isNotEmpty) ...[
-                  const SizedBox(height: 18),
-                  Text('CHECK-INS', style: p.h2),
-                  const SizedBox(height: 10),
-                  for (final log in logs) _logRow(sheetContext, habits, log),
-                ],
+                NdSheetHeader(title: title),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.fromLTRB(
+                      NdSpace.page,
+                      0,
+                      NdSpace.page,
+                      NdSpace.xl,
+                    ),
+                    children: [
+                      if (photos.isNotEmpty) ...[
+                        SizedBox(
+                          height: 260,
+                          child: _DayGallery(photos: photos),
+                        ),
+                        const SizedBox(height: NdSpace.xl),
+                      ],
+                      if (entries.isNotEmpty) ...[
+                        Text('JOURNAL', style: p.h2),
+                        const SizedBox(height: NdSpace.md),
+                        for (final entry in entries)
+                          _entryRow(sheetContext, navigator, entry),
+                        const SizedBox(height: NdSpace.sm),
+                      ],
+                      if (logs.isNotEmpty) ...[
+                        Text('CHECK-INS', style: p.h2),
+                        const SizedBox(height: NdSpace.md),
+                        for (final log in logs)
+                          _logRow(sheetContext, habits, log),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -256,36 +291,26 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
         ? journalDuration(entry.durationMs)
         : entry.type.label;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: PixelCard(
-        padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.only(bottom: NdSpace.sm),
+      child: NdCard(
+        radius: NdRadius.inner,
+        padding: const EdgeInsets.all(NdSpace.md),
         onTap: () {
           Navigator.pop(sheetContext);
           navigator.push(slideUpRoute(JournalEntryView(entry: entry)));
         },
         child: Row(
           children: [
-            PixelIcon(
-              journalTypeGlyph(entry.type),
-              color: p.accentMid,
-              size: 13,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              journalHm(entry.at),
-              style: TextStyle(
-                fontFamily: kFontTerminal,
-                fontSize: 18,
-                color: p.textDim,
-              ),
-            ),
-            const SizedBox(width: 10),
+            NdIcon(journalTypeGlyph(entry.type), color: p.accent, size: 16),
+            const SizedBox(width: NdSpace.md),
+            Text(journalHm(entry.at), style: p.dot(15, color: p.textDim)),
+            const SizedBox(width: NdSpace.md),
             Expanded(
               child: Text(
                 preview,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: p.body.copyWith(fontSize: 18),
+                style: p.body,
               ),
             ),
           ],
@@ -294,29 +319,26 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
     );
   }
 
-  Widget _logRow(
-    BuildContext sheetContext,
-    HabitStore habits,
-    HabitLog log,
-  ) {
+  Widget _logRow(BuildContext sheetContext, HabitStore habits, HabitLog log) {
     final p = sheetContext.palette;
     final habit = habits.habitById(log.habitId);
     final dotColor =
         habitDotColors[(habit?.colorIndex ?? 0) % habitDotColors.length];
     final note = log.note ?? '';
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: PixelCard(
-        padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.only(bottom: NdSpace.sm),
+      child: NdCard(
+        radius: NdRadius.inner,
+        padding: const EdgeInsets.all(NdSpace.md),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            PixelIcon(
-              Px.habitIcon(habit?.icon ?? 'flame'),
+            NdIcon(
+              Nd.habitIcon(habit?.icon ?? 'flame'),
               color: dotColor,
-              size: 14,
+              size: 18,
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: NdSpace.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,43 +347,34 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          (habit?.name ?? 'SIGNAL LOST').toUpperCase(),
+                          habit?.name ?? 'Deleted habit',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: kFontTerminal,
-                            fontSize: 19,
-                            color: p.text,
-                            height: 1.1,
-                          ),
+                          style: p.row.copyWith(fontSize: 15),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: NdSpace.sm),
                       Text(
                         journalHm(log.at),
-                        style: TextStyle(
-                          fontFamily: kFontTerminal,
-                          fontSize: 16,
-                          color: p.textDim,
-                        ),
+                        style: p.dot(15, color: p.textDim),
                       ),
                     ],
                   ),
                   if (note.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       note,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: p.bodyDim.copyWith(fontSize: 16),
+                      style: p.bodyDim.copyWith(fontSize: 14),
                     ),
                   ],
                 ],
               ),
             ),
             if (log.photoPath != null) ...[
-              const SizedBox(width: 8),
-              PixelIcon(Px.camera, color: p.accentMid, size: 12),
+              const SizedBox(width: NdSpace.sm),
+              NdIcon(Nd.camera, color: p.accent, size: 15),
             ],
           ],
         ),
@@ -403,8 +416,12 @@ class _DayGalleryState extends State<_DayGallery> {
               setState(() => _page = i);
             },
             itemBuilder: (context, i) => Container(
-              color: Colors.black,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
+              margin: const EdgeInsets.symmetric(horizontal: NdSpace.xs),
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: p.panel,
+                borderRadius: BorderRadius.circular(NdRadius.inner),
+              ),
               child: MediaImage(widget.photos[i], fit: BoxFit.contain),
             ),
           ),
@@ -418,10 +435,13 @@ class _DayGalleryState extends State<_DayGallery> {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
-                  width: 6,
+                  width: i == _page ? 18 : 6,
                   height: 6,
                   margin: const EdgeInsets.symmetric(horizontal: 3),
-                  color: i == _page ? p.accent : p.border,
+                  decoration: BoxDecoration(
+                    color: i == _page ? p.accent : p.borderHi,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
             ],
           ),

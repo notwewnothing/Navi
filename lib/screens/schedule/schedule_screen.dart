@@ -6,9 +6,10 @@ import '../../services/schedule_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
 import '../../widgets/month_grid.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import '../../widgets/routes.dart';
+import '../shell.dart';
 import 'day_detail_screen.dart';
 import 'event_edit_sheet.dart';
 
@@ -25,7 +26,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return DateTime(now.year, now.month, 1);
   }();
 
-  static const _daysShort = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  static const _daysShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   List<(DateTime, ScheduleEvent)> _upcoming(ScheduleStore schedule) {
     final now = DateTime.now();
@@ -48,14 +49,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     // both normalized to midnight first so DST shifts can't skew the day count
     final diff = day.difference(today).inDays;
     return switch (diff) {
-      0 => 'TODAY',
-      1 => 'TOMORROW',
+      0 => 'Today',
+      1 => 'Tomorrow',
       _ => '${_daysShort[day.weekday - 1]} ${day.day}',
     };
   }
 
-  Widget _cell(BuildContext context, DateTime day, ScheduleStore schedule,
-      JournalStore journal) {
+  Widget _cell(
+    BuildContext context,
+    DateTime day,
+    ScheduleStore schedule,
+    JournalStore journal,
+  ) {
     final p = context.palette;
     final types = schedule.typesOn(day);
     final dots = <Color>[
@@ -66,35 +71,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       if (journal.hasEntryOn(day)) p.journalDot,
     ];
     return Padding(
-      padding: const EdgeInsets.all(3),
-      child: Stack(
+      padding: const EdgeInsets.all(5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: Text(
-              '${day.day}',
-              style: TextStyle(
-                fontFamily: kFontPixel,
-                fontSize: 6,
-                height: 1,
-                color: p.textDim,
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final color in dots)
-                  Container(
-                    width: 3,
-                    height: 3,
-                    margin: const EdgeInsets.only(right: 2),
+          Text('${day.day}', style: p.micro.copyWith(color: p.textDim)),
+          const Spacer(),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final color in dots)
+                Container(
+                  width: 4,
+                  height: 4,
+                  margin: const EdgeInsets.only(right: 3),
+                  decoration: BoxDecoration(
                     color: color,
+                    shape: BoxShape.circle,
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ],
       ),
@@ -111,47 +107,50 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.only(bottom: 28),
+          padding: const EdgeInsets.only(bottom: kNavContentInset),
           children: [
-            const PixelHeader(title: 'SCHEDULE'),
+            const NdHeader(title: 'Schedule'),
             _Reveal(
               index: 0,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: NdSpace.page),
                 child: MonthGrid(
                   month: _month,
                   onMonthChanged: (m) => setState(() => _month = m),
                   cellBuilder: (context, day) =>
                       _cell(context, day, schedule, journal),
-                  onTapDay: (day) => Navigator.of(context)
-                      .push(slideUpRoute(DayDetailScreen(day: day))),
+                  onTapDay: (day) => Navigator.of(
+                    context,
+                  ).push(slideUpRoute(DayDetailScreen(day: day))),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: NdSpace.xxl),
             _Reveal(
               index: 1,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: NdSpace.page),
                 child: Row(
                   children: [
                     Text('UPCOMING', style: p.h2),
                     const Spacer(),
                     Text(
                       'NEXT 7 DAYS',
-                      style: p.label.copyWith(color: p.textGhost),
+                      style: p.micro.copyWith(color: p.textGhost),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: NdSpace.md),
             if (upcoming.isEmpty)
-              const SizedBox(
-                height: 140,
+              SizedBox(
+                height: 180,
                 child: EmptyState(
-                  glyph: Px.calendar,
-                  message: 'Nothing is scheduled.\nThe Wired is quiet.',
+                  glyph: Nd.calendar,
+                  message: 'Nothing scheduled this week.',
+                  actionLabel: 'Add an event',
+                  onAction: () => showEventEditSheet(context),
                 ),
               )
             else
@@ -159,7 +158,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 _Reveal(
                   index: 2 + i,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                    padding: const EdgeInsets.fromLTRB(
+                      NdSpace.page,
+                      0,
+                      NdSpace.page,
+                      NdSpace.md,
+                    ),
                     child: _UpcomingCard(
                       event: event,
                       dayLabel: _dayLabel(day),
@@ -195,51 +199,42 @@ class _UpcomingCard extends StatelessWidget {
     final time = event.type == EventType.alarm
         ? hhmm(event.startMin)
         : event.timeLabel;
-    return PixelCard(
+    return NdCard(
       onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.all(NdSpace.lg),
       child: Row(
         children: [
-          Container(width: 10, height: 10, color: color),
-          const SizedBox(width: 12),
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: NdSpace.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  event.title.toUpperCase(),
+                  event.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: kFontTerminal,
-                    fontSize: 21,
-                    height: 1.05,
-                    color: p.text,
-                  ),
+                  style: p.row,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  time,
-                  style: TextStyle(
-                    fontFamily: kFontTerminal,
-                    fontSize: 15,
-                    height: 1,
-                    color: p.textDim,
-                  ),
-                ),
+                const SizedBox(height: 3),
+                Text(time, style: p.label),
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: NdSpace.md),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(dayLabel, style: p.label.copyWith(color: p.accentMid)),
+              Text(dayLabel, style: p.micro.copyWith(color: p.accent)),
               if (event.repeat != EventRepeat.never) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: NdSpace.xs),
                 Text(
                   event.repeat.label,
-                  style: p.label.copyWith(color: p.textGhost),
+                  style: p.micro.copyWith(color: p.textGhost),
                 ),
               ],
             ],
@@ -266,7 +261,10 @@ class _Reveal extends StatelessWidget {
       curve: Interval(delay / total, 1, curve: Curves.easeOutCubic),
       builder: (context, t, child) => Opacity(
         opacity: t,
-        child: Transform.translate(offset: Offset(0, 14 * (1 - t)), child: child),
+        child: Transform.translate(
+          offset: Offset(0, 14 * (1 - t)),
+          child: child,
+        ),
       ),
       child: child,
     );

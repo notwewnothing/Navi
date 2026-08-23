@@ -8,24 +8,34 @@ import 'package:record/record.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../models/journal_entry.dart';
-import '../../services/easter_eggs.dart';
 import '../../services/journal_store.dart';
 import '../../services/media_store.dart';
 import '../../services/settings_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
-import '../../widgets/glitch.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import '../../widgets/routes.dart';
 import 'journal_entry_view.dart' show MediaImage, journalDuration, journalStamp;
 
-Future<void> showJournalEntrySheet(BuildContext context) async {
+/// Capture types the journal sheet can be opened straight into, so callers
+/// like the home screen can skip the type picker.
+enum JournalCapture { text, photo, video, voice }
+
+Future<void> showJournalEntrySheet(
+  BuildContext context, {
+  JournalCapture? start,
+}) async {
   final navigator = Navigator.of(context);
+  // text needs no sheet at all, go straight to the writing screen
+  if (start == JournalCapture.text) {
+    navigator.push(slideUpRoute(const _TextEntryScreen()));
+    return;
+  }
   final settings = SettingsScope.of(context);
-  final result = await showPixelSheet<(JournalType, ImageSource?)>(
+  final result = await showNdSheet<(JournalType, ImageSource?)>(
     context: context,
-    builder: (_) => const _EntrySheet(),
+    builder: (_) => _EntrySheet(start: start),
   );
   if (result == null) return;
   switch (result) {
@@ -69,18 +79,27 @@ Future<void> _pickAndCaption(
   );
 }
 
-
 enum _SheetPane { pick, photoSource, videoSource, record, recordSave }
 
 class _EntrySheet extends StatefulWidget {
-  const _EntrySheet();
+  const _EntrySheet({this.start});
+
+  final JournalCapture? start;
 
   @override
   State<_EntrySheet> createState() => _EntrySheetState();
 }
 
 class _EntrySheetState extends State<_EntrySheet> {
-  _SheetPane _pane = _SheetPane.pick;
+  late _SheetPane _pane = switch (widget.start) {
+    null || JournalCapture.text => _SheetPane.pick,
+    JournalCapture.photo => _SheetPane.photoSource,
+    JournalCapture.video => _SheetPane.videoSource,
+    JournalCapture.voice => _SheetPane.record,
+  };
+
+  /// Opened straight into one capture type, so there is no picker to go back to.
+  bool get _direct => widget.start != null;
 
   final AudioRecorder _rec = AudioRecorder();
   StreamSubscription<Amplitude>? _ampSub;
@@ -92,6 +111,16 @@ class _EntrySheetState extends State<_EntrySheet> {
   bool _saving = false;
   bool _saved = false;
   final _captionController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.start == JournalCapture.voice) {
+      // _startRecording can toast on permission denial, which needs a live
+      // overlay, so wait until the sheet has actually been painted
+      WidgetsBinding.instance.addPostFrameCallback((_) => _startRecording());
+    }
+  }
 
   @override
   void dispose() {
@@ -112,7 +141,6 @@ class _EntrySheetState extends State<_EntrySheet> {
     super.dispose();
   }
 
-
   Future<void> _startRecording() async {
     setState(() {
       _pane = _SheetPane.record;
@@ -121,7 +149,7 @@ class _EntrySheetState extends State<_EntrySheet> {
     try {
       if (!await _rec.hasPermission()) {
         if (!mounted) return;
-        showPixelToast(context, 'MICROPHONE ACCESS DENIED', glyph: Px.x);
+        showNdToast(context, 'Microphone access denied', glyph: Nd.x);
         setState(() => _pane = _SheetPane.pick);
         return;
       }
@@ -131,9 +159,9 @@ class _EntrySheetState extends State<_EntrySheet> {
         path: path,
       );
       _recPath = path;
-      _ampSub = _rec
-          .onAmplitudeChanged(const Duration(milliseconds: 120))
-          .listen((amp) {
+      _ampSub = _rec.onAmplitudeChanged(const Duration(milliseconds: 120)).listen((
+        amp,
+      ) {
         if (!mounted) return;
         setState(() {
           // amplitudes come in as dB, +45 shifts silence to 0 before the 0-1 clamp
@@ -149,7 +177,7 @@ class _EntrySheetState extends State<_EntrySheet> {
       });
     } catch (_) {
       if (!mounted) return;
-      showPixelToast(context, 'RECORDER OFFLINE', glyph: Px.x);
+      showNdToast(context, "Recorder isn't available", glyph: Nd.x);
       setState(() => _pane = _SheetPane.pick);
     }
   }
@@ -182,7 +210,7 @@ class _EntrySheetState extends State<_EntrySheet> {
     _saved = true;
     if (!mounted) return;
     Sfx.complete();
-    showPixelToast(context, 'COMMITTED TO THE WIRED', glyph: Px.check);
+    showNdToast(context, 'Entry saved', glyph: Nd.check);
     Navigator.pop(context);
   }
 
@@ -190,23 +218,25 @@ class _EntrySheetState extends State<_EntrySheet> {
     Navigator.pop(context);
   }
 
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+        padding: const EdgeInsets.fromLTRB(
+          NdSpace.page,
+          NdSpace.md,
+          NdSpace.page,
+          NdSpace.xl,
+        ),
         child: AnimatedSize(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
           alignment: Alignment.topCenter,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: child,
-            ),
+            transitionBuilder: (child, animation) =>
+                FadeTransition(opacity: animation, child: child),
             child: KeyedSubtree(
               key: ValueKey(_pane),
               child: switch (_pane) {
@@ -230,33 +260,36 @@ class _EntrySheetState extends State<_EntrySheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('NEW ENTRY', style: p.h2),
-        const SizedBox(height: 16),
+        const SizedBox(height: NdSpace.lg),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            PixelChip(
-              label: 'TEXT',
-              selected: false,
-              onTap: () => Navigator.pop(context, (JournalType.text, null)),
-            ),
-            PixelChip(
-              label: 'PHOTO',
-              selected: false,
-              onTap: () => setState(() => _pane = _SheetPane.photoSource),
-            ),
-            PixelChip(
-              label: 'VIDEO',
-              selected: false,
-              onTap: () => setState(() => _pane = _SheetPane.videoSource),
-            ),
-            PixelChip(
-              label: 'AUDIO',
-              selected: false,
-              onTap: _startRecording,
-            ),
+            for (final (i, (glyph, label, onTap))
+                in <(NdGlyph, String, VoidCallback)>[
+                  (
+                    Nd.textLines,
+                    'Text',
+                    () => Navigator.pop(context, (JournalType.text, null)),
+                  ),
+                  (
+                    Nd.camera,
+                    'Photo',
+                    () => setState(() => _pane = _SheetPane.photoSource),
+                  ),
+                  (
+                    Nd.video,
+                    'Video',
+                    () => setState(() => _pane = _SheetPane.videoSource),
+                  ),
+                  (Nd.mic, 'Voice', _startRecording),
+                ].indexed) ...[
+              if (i > 0) const SizedBox(width: NdSpace.md),
+              Expanded(
+                child: _TypeTile(glyph: glyph, label: label, onTap: onTap),
+              ),
+            ],
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: NdSpace.xs),
       ],
     );
   }
@@ -269,35 +302,36 @@ class _EntrySheetState extends State<_EntrySheet> {
       children: [
         Row(
           children: [
-            PixelIconButton(
-              glyph: Px.left,
-              size: 14,
-              onTap: () => setState(() => _pane = _SheetPane.pick),
+            NdIconButton(
+              glyph: Nd.left,
+              size: 20,
+              onTap: () => _direct
+                  ? Navigator.pop(context)
+                  : setState(() => _pane = _SheetPane.pick),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: NdSpace.xs),
             Text(
               type == JournalType.photo ? 'PHOTO SOURCE' : 'VIDEO SOURCE',
               style: p.h2,
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: NdSpace.lg),
         Row(
           children: [
             Expanded(
-              child: PixelButton(
-                label: 'CAMERA',
-                glyph: Px.camera,
+              child: NdButton(
+                label: 'Camera',
+                glyph: Nd.camera,
                 expand: true,
-                onTap: () =>
-                    Navigator.pop(context, (type, ImageSource.camera)),
+                onTap: () => Navigator.pop(context, (type, ImageSource.camera)),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: NdSpace.md),
             Expanded(
-              child: PixelButton(
-                label: 'GALLERY',
-                glyph: Px.photo,
+              child: NdButton(
+                label: 'Gallery',
+                glyph: Nd.photo,
                 expand: true,
                 onTap: () =>
                     Navigator.pop(context, (type, ImageSource.gallery)),
@@ -305,7 +339,7 @@ class _EntrySheetState extends State<_EntrySheet> {
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: NdSpace.xs),
       ],
     );
   }
@@ -319,30 +353,26 @@ class _EntrySheetState extends State<_EntrySheet> {
       children: [
         Row(
           children: [
-            BlinkingCursor(width: 10, height: 10, color: p.danger),
-            const SizedBox(width: 10),
-            Text('RECORDING', style: p.label.copyWith(color: p.danger)),
+            NdPulseDot(size: 10, color: p.danger),
+            const SizedBox(width: NdSpace.md),
+            Text('RECORDING', style: p.h2.copyWith(color: p.danger)),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: NdSpace.lg),
         Center(
           child: Text(
             journalDuration(elapsed),
-            style: TextStyle(
-              fontFamily: kFontTerminal,
-              fontSize: 64,
-              color: p.accent,
-              height: 1,
-            ),
+            style: p.dot(64, color: p.text, letterSpacing: 3),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: NdSpace.lg),
         _Waveform(amps: _amps),
-        const SizedBox(height: 18),
-        PixelButton(
-          label: 'STOP',
-          glyph: Px.stop,
+        const SizedBox(height: NdSpace.xl),
+        NdButton(
+          label: 'Stop recording',
+          glyph: Nd.stop,
           danger: true,
+          filled: true,
           expand: true,
           onTap: _stopRecording,
         ),
@@ -358,39 +388,26 @@ class _EntrySheetState extends State<_EntrySheet> {
       children: [
         Row(
           children: [
-            PixelIcon(Px.mic, color: p.accent, size: 16),
-            const SizedBox(width: 10),
-            Text(
-              journalDuration(_durationMs),
-              style: TextStyle(
-                fontFamily: kFontTerminal,
-                fontSize: 30,
-                color: p.text,
-                height: 1,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text('CAPTURED', style: p.label),
+            NdIcon(Nd.mic, color: p.accent, size: 20),
+            const SizedBox(width: NdSpace.md),
+            Text(journalDuration(_durationMs), style: p.dot(28, color: p.text)),
+            const SizedBox(width: NdSpace.md),
+            Text('recorded', style: p.label),
           ],
         ),
-        const SizedBox(height: 14),
-        PixelTextField(
+        const SizedBox(height: NdSpace.lg),
+        NdTextField(
           controller: _captionController,
-          hint: 'Caption...',
-          fontSize: 20,
+          hint: 'Add a caption (optional)',
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: NdSpace.lg),
         Row(
           children: [
-            DialogAction(
-              label: 'DISCARD',
-              danger: true,
-              onTap: _discardAudio,
-            ),
+            DialogAction(label: 'Discard', danger: true, onTap: _discardAudio),
             const Spacer(),
-            PixelButton(
-              label: 'SAVE',
-              height: 42,
+            NdButton(
+              label: 'Save',
+              height: 46,
               filled: true,
               onTap: _saveAudio,
             ),
@@ -423,7 +440,10 @@ class _Waveform extends StatelessWidget {
                 curve: Curves.easeOut,
                 width: 3,
                 height: 4 + 48 * a,
-                color: p.accent.withValues(alpha: 0.35 + 0.65 * a),
+                decoration: BoxDecoration(
+                  color: p.accent.withValues(alpha: 0.35 + 0.65 * a),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
         ],
@@ -431,7 +451,6 @@ class _Waveform extends StatelessWidget {
     );
   }
 }
-
 
 class _TextEntryScreen extends StatefulWidget {
   const _TextEntryScreen();
@@ -454,16 +473,15 @@ class _TextEntryScreenState extends State<_TextEntryScreen> {
     if (_autoSave == null) {
       // degenerate setting guard, never autosave faster than 5 seconds
       final seconds = SettingsScope.of(context).autoSaveSeconds;
-      _autoSave = Timer.periodic(
-        Duration(seconds: seconds < 1 ? 5 : seconds),
-        (_) {
-          if (!mounted || _controller.text == _draft) return;
-          setState(() {
-            _draft = _controller.text;
-            _draftAt = DateTime.now();
-          });
-        },
-      );
+      _autoSave = Timer.periodic(Duration(seconds: seconds < 1 ? 5 : seconds), (
+        _,
+      ) {
+        if (!mounted || _controller.text == _draft) return;
+        setState(() {
+          _draft = _controller.text;
+          _draftAt = DateTime.now();
+        });
+      });
     }
   }
 
@@ -483,7 +501,7 @@ class _TextEntryScreenState extends State<_TextEntryScreen> {
     await journal.add(type: JournalType.text, body: text);
     if (!mounted) return;
     Sfx.complete();
-    showPixelToast(context, 'COMMITTED TO THE WIRED', glyph: Px.check);
+    showNdToast(context, 'Entry saved', glyph: Nd.check);
     navigator.pop();
   }
 
@@ -494,56 +512,43 @@ class _TextEntryScreenState extends State<_TextEntryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            PixelHeader(
-              title: 'TEXT ENTRY',
-              leading: PixelIconButton(
-                glyph: Px.left,
+            NdHeader(
+              title: 'New entry',
+              leading: NdIconButton(
+                glyph: Nd.left,
                 onTap: () => Navigator.pop(context),
               ),
               actions: [
-                PixelButton(
-                  label: 'SAVE',
-                  height: 38,
-                  filled: true,
-                  onTap: _save,
-                ),
+                NdButton(label: 'Save', height: 42, filled: true, onTap: _save),
               ],
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: NdSpace.page),
               child: Row(
                 children: [
-                  Text(
-                    journalStamp(_stamp),
-                    style: TextStyle(
-                      fontFamily: kFontTerminal,
-                      fontSize: 18,
-                      color: p.textDim,
-                    ),
-                  ),
+                  Text(journalStamp(_stamp), style: p.label),
                   const Spacer(),
                   AnimatedOpacity(
                     opacity: _draftAt == null ? 0 : 1,
                     duration: const Duration(milliseconds: 250),
                     child: Text(
-                      'DRAFT BUFFERED',
+                      'Draft kept',
                       style: p.label.copyWith(color: p.textGhost),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: NdSpace.sm),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: PixelTextField(
+                padding: const EdgeInsets.symmetric(horizontal: NdSpace.page),
+                child: NdTextField(
                   controller: _controller,
-                  hint: 'Speak to the Wired...',
+                  hint: 'Start writing...',
                   autofocus: true,
                   maxLines: null,
-                  fontSize: 22,
-                  onChanged: (text) => EasterEggs.watchText(context, text),
+                  filled: false,
                 ),
               ),
             ),
@@ -554,7 +559,6 @@ class _TextEntryScreenState extends State<_TextEntryScreen> {
     );
   }
 }
-
 
 class _MediaCaptionScreen extends StatefulWidget {
   const _MediaCaptionScreen({required this.type, required this.mediaPath});
@@ -615,7 +619,7 @@ class _MediaCaptionScreenState extends State<_MediaCaptionScreen> {
     _saved = true;
     if (!mounted) return;
     Sfx.complete();
-    showPixelToast(context, 'COMMITTED TO THE WIRED', glyph: Px.check);
+    showNdToast(context, 'Entry saved', glyph: Nd.check);
     navigator.pop();
   }
 
@@ -630,42 +634,51 @@ class _MediaCaptionScreenState extends State<_MediaCaptionScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              PixelHeader(
+              NdHeader(
                 title: widget.type == JournalType.photo
-                    ? 'NEW PHOTO'
-                    : 'NEW VIDEO',
-                leading: PixelIconButton(
-                  glyph: Px.left,
+                    ? 'New photo'
+                    : 'New video',
+                leading: NdIconButton(
+                  glyph: Nd.left,
                   onTap: () => Navigator.pop(context),
                 ),
               ),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                  padding: const EdgeInsets.fromLTRB(
+                    NdSpace.page,
+                    NdSpace.sm,
+                    NdSpace.page,
+                    NdSpace.xl,
+                  ),
                   children: [
                     _preview(p),
-                    const SizedBox(height: 16),
-                    PixelTextField(
+                    const SizedBox(height: NdSpace.lg),
+                    NdTextField(
                       controller: _captionController,
-                      hint: 'Caption...',
-                      fontSize: 20,
+                      hint: 'Add a caption (optional)',
                     ),
                   ],
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                padding: const EdgeInsets.fromLTRB(
+                  NdSpace.page,
+                  NdSpace.xs,
+                  NdSpace.page,
+                  NdSpace.lg,
+                ),
                 child: Row(
                   children: [
                     DialogAction(
-                      label: 'DISCARD',
+                      label: 'Discard',
                       danger: true,
                       onTap: () => Navigator.pop(context),
                     ),
                     const Spacer(),
-                    PixelButton(
-                      label: 'SAVE',
-                      height: 44,
+                    NdButton(
+                      label: 'Save',
+                      height: 46,
                       filled: true,
                       onTap: _save,
                     ),
@@ -681,54 +694,95 @@ class _MediaCaptionScreenState extends State<_MediaCaptionScreen> {
 
   Widget _preview(NaviPalette p) {
     if (widget.type == JournalType.photo) {
-      return Container(
-        height: 380,
-        color: Colors.black,
-        child: MediaImage(widget.mediaPath, fit: BoxFit.contain),
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(NdRadius.card),
+        child: Container(
+          height: 380,
+          color: p.panel,
+          child: MediaImage(widget.mediaPath, fit: BoxFit.contain),
+        ),
       );
     }
     final video = _video;
     if (!_videoReady || video == null) {
-      return Container(
-        height: 260,
-        color: Colors.black,
-        child: Center(child: Text('DECODING...', style: p.label)),
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(NdRadius.card),
+        child: Container(
+          height: 260,
+          color: p.panel,
+          child: Center(child: Text('Loading preview...', style: p.label)),
+        ),
       );
     }
-    final ratio =
-        video.value.aspectRatio <= 0 ? 16 / 9 : video.value.aspectRatio;
-    return Container(
-      color: Colors.black,
-      child: AspectRatio(
-        aspectRatio: ratio,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            VideoPlayer(video),
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                color: Colors.black.withValues(alpha: 0.45),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    PixelIcon(Px.video, color: p.accent, size: 16),
-                    const SizedBox(width: 10),
-                    Text(
-                      journalDuration(_videoDurationMs),
-                      style: TextStyle(
-                        fontFamily: kFontTerminal,
-                        fontSize: 20,
-                        color: p.text,
-                        height: 1,
+    final ratio = video.value.aspectRatio <= 0
+        ? 16 / 9
+        : video.value.aspectRatio;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(NdRadius.card),
+      child: Container(
+        color: p.panel,
+        child: AspectRatio(
+          aspectRatio: ratio,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              VideoPlayer(video),
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: NdSpace.lg,
+                    vertical: NdSpace.md,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(NdRadius.pill),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      NdIcon(Nd.video, color: p.accent, size: 18),
+                      const SizedBox(width: NdSpace.sm),
+                      Text(
+                        journalDuration(_videoDurationMs),
+                        style: p.dot(20, color: Colors.white),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+/// Entry-type picker tile used by the new-entry sheet.
+class _TypeTile extends StatelessWidget {
+  const _TypeTile({
+    required this.glyph,
+    required this.label,
+    required this.onTap,
+  });
+
+  final NdGlyph glyph;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return NdCard(
+      onTap: onTap,
+      radius: NdRadius.inner,
+      padding: const EdgeInsets.symmetric(vertical: NdSpace.lg),
+      child: Column(
+        children: [
+          NdIcon(glyph, color: p.text, size: 24),
+          const SizedBox(height: NdSpace.sm),
+          Text(label, style: p.label.copyWith(color: p.text)),
+        ],
       ),
     );
   }

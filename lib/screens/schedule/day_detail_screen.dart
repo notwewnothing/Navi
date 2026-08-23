@@ -12,8 +12,8 @@ import '../../services/journal_store.dart';
 import '../../services/schedule_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import '../../widgets/tactile.dart';
 import 'event_edit_sheet.dart';
 
@@ -34,8 +34,18 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   static const _rulerWidth = 44.0;
 
   static const _monthsShort = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   late final ScrollController _scroll;
@@ -80,8 +90,7 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   }
 
   String get _dateLabel =>
-      '${_monthsShort[widget.day.month - 1]} ${widget.day.day} ${widget.day.year}';
-
+      '${widget.day.day} ${_monthsShort[widget.day.month - 1]} ${widget.day.year}';
 
   int _snap(double dy) =>
       ((((dy - _topPad) / _pxPerMin) / 15).round() * 15).clamp(0, 1440);
@@ -135,14 +144,16 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final schedule = ScheduleScope.of(context);
     final events = schedule.eventsForDay(widget.day);
-    final prevDay =
-        DateTime(widget.day.year, widget.day.month, widget.day.day - 1);
+    final prevDay = DateTime(
+      widget.day.year,
+      widget.day.month,
+      widget.day.day - 1,
+    );
     final tails = [
       for (final e in schedule.eventsForDay(prevDay))
         if (e.endMin < e.startMin && e.endMin > 0) e,
@@ -152,15 +163,29 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            PixelHeader(
+            NdHeader(
               title: _dateLabel,
-              leading: PixelIconButton(
-                glyph: Px.left,
+              subtitle: 'Long-press the timeline to draw an event',
+              leading: NdIconButton(
+                glyph: Nd.left,
                 onTap: () => Navigator.pop(context),
               ),
               actions: [
                 if (_isToday)
-                  Text('TODAY', style: p.label.copyWith(color: p.accent)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: NdSpace.md,
+                      vertical: NdSpace.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: p.accent,
+                      borderRadius: BorderRadius.circular(NdRadius.pill),
+                    ),
+                    child: Text(
+                      'TODAY',
+                      style: p.micro.copyWith(color: p.onAccent),
+                    ),
+                  ),
               ],
             ),
             Expanded(
@@ -195,11 +220,10 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                     ),
                   ),
                   Positioned(
-                    right: 16,
-                    bottom: 14,
-                    child: PixelFab(
-                      onTap: () =>
-                          showEventEditSheet(context, day: widget.day),
+                    right: NdSpace.lg,
+                    bottom: NdSpace.lg,
+                    child: NdFab(
+                      onTap: () => showEventEditSheet(context, day: widget.day),
                     ),
                   ),
                 ],
@@ -212,52 +236,43 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     );
   }
 
-
   List<Widget> _ruler(NaviPalette p) => [
-        for (var h = 0; h <= 24; h++) ...[
-          Positioned(
-            top: _y(h * 60) - 0.5,
-            left: _rulerWidth,
-            right: 0,
-            child: IgnorePointer(
-              child: Container(
-                height: 1,
-                color: p.border.withValues(alpha: 0.7),
-              ),
+    for (var h = 0; h <= 24; h++) ...[
+      Positioned(
+        top: _y(h * 60) - 0.5,
+        left: _rulerWidth,
+        right: 0,
+        child: IgnorePointer(
+          child: Container(height: 1, color: p.border.withValues(alpha: 0.7)),
+        ),
+      ),
+      if (h < 24) ...[
+        Positioned(
+          top: _y(h * 60 + 30) - 0.5,
+          left: _rulerWidth,
+          right: 0,
+          child: IgnorePointer(
+            child: Container(
+              height: 1,
+              color: p.border.withValues(alpha: 0.28),
             ),
           ),
-          if (h < 24) ...[
-            Positioned(
-              top: _y(h * 60 + 30) - 0.5,
-              left: _rulerWidth,
-              right: 0,
-              child: IgnorePointer(
-                child: Container(
-                  height: 1,
-                  color: p.border.withValues(alpha: 0.28),
-                ),
-              ),
+        ),
+        Positioned(
+          top: _y(h * 60) - 7,
+          left: 0,
+          width: _rulerWidth - 6,
+          child: IgnorePointer(
+            child: Text(
+              h.toString().padLeft(2, '0'),
+              textAlign: TextAlign.right,
+              style: p.dot(13, color: p.textGhost),
             ),
-            Positioned(
-              top: _y(h * 60) - 7,
-              left: 0,
-              width: _rulerWidth - 6,
-              child: IgnorePointer(
-                child: Text(
-                  h.toString().padLeft(2, '0'),
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontFamily: kFontTerminal,
-                    fontSize: 14,
-                    height: 1,
-                    color: p.textGhost,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ];
+          ),
+        ),
+      ],
+    ],
+  ];
 
   Widget _eventBlock(BuildContext context, ScheduleEvent e, int index) {
     final start = e.startMin;
@@ -290,26 +305,19 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
       _ => e.timeLabel,
     };
     final title = Text(
-      e.title.toUpperCase(),
+      e.title,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        fontFamily: kFontPixel,
-        fontSize: 7,
-        letterSpacing: 1,
-        height: 1.4,
+      style: p.label.copyWith(
         color: color,
+        fontWeight: FontWeight.w600,
+        fontSize: 13,
       ),
     );
     final timeText = Text(
       time,
       maxLines: 1,
-      style: TextStyle(
-        fontFamily: kFontTerminal,
-        fontSize: 13,
-        height: 1,
-        color: p.textDim,
-      ),
+      style: p.micro.copyWith(color: p.textDim),
     );
     return Positioned(
       top: _y(start),
@@ -327,17 +335,18 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
               showEventEditSheet(context, event: e);
             },
             child: Container(
-              clipBehavior: Clip.hardEdge,
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.18),
+                color: color.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(NdRadius.small),
                 border: Border(left: BorderSide(color: color, width: 3)),
               ),
-              padding: const EdgeInsets.fromLTRB(8, 3, 8, 3),
+              padding: const EdgeInsets.fromLTRB(NdSpace.md, 4, NdSpace.md, 4),
               child: compact
                   ? Row(
                       children: [
                         Expanded(child: title),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: NdSpace.sm),
                         timeText,
                       ],
                     )
@@ -366,18 +375,14 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
         child: Container(
           decoration: BoxDecoration(
             color: p.accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(NdRadius.small),
             border: Border.all(color: p.accent, width: 1.5),
           ),
-          padding: const EdgeInsets.fromLTRB(8, 3, 8, 3),
+          padding: const EdgeInsets.fromLTRB(NdSpace.md, 4, NdSpace.md, 4),
           alignment: Alignment.topLeft,
           child: Text(
             '${hhmm(lo)} — ${hhmm(hi)}',
-            style: TextStyle(
-              fontFamily: kFontTerminal,
-              fontSize: 13,
-              height: 1,
-              color: p.accent,
-            ),
+            style: p.dot(14, color: p.accent),
           ),
         ),
       ),
@@ -391,20 +396,21 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
         top: y - 0.75,
         left: _rulerWidth,
         right: 0,
-        child: IgnorePointer(
-          child: Container(height: 1.5, color: p.accent),
-        ),
+        child: IgnorePointer(child: Container(height: 1.5, color: p.accent)),
       ),
       Positioned(
-        top: y - 3,
-        left: _rulerWidth - 3,
+        top: y - 4,
+        left: _rulerWidth - 4,
         child: IgnorePointer(
-          child: Container(width: 6, height: 6, color: p.accent),
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: p.accent, shape: BoxShape.circle),
+          ),
         ),
       ),
     ];
   }
-
 
   Widget _logsSection(BuildContext context) {
     final p = context.palette;
@@ -420,10 +426,20 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     for (final log in habitLogs) {
       final habit = habits.habitById(log.habitId);
       if (habit == null) continue;
-      rows.add(_Reveal(index: i++, child: _HabitLogRow(habit: habit, log: log)));
+      rows.add(
+        _Reveal(
+          index: i++,
+          child: _HabitLogRow(habit: habit, log: log),
+        ),
+      );
     }
     for (final entry in entries) {
-      rows.add(_Reveal(index: i++, child: _JournalRow(entry: entry)));
+      rows.add(
+        _Reveal(
+          index: i++,
+          child: _JournalRow(entry: entry),
+        ),
+      );
     }
 
     return Container(
@@ -439,15 +455,20 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
+            padding: const EdgeInsets.fromLTRB(
+              NdSpace.page,
+              NdSpace.lg,
+              NdSpace.page,
+              NdSpace.sm,
+            ),
             child: Row(
               children: [
-                Text('LOGS', style: p.h2),
+                Text('LOGGED THIS DAY', style: p.h2),
                 const Spacer(),
                 if (rows.isNotEmpty)
                   Text(
                     '${rows.length}',
-                    style: p.label.copyWith(color: p.accentMid),
+                    style: p.micro.copyWith(color: p.accent),
                   ),
               ],
             ),
@@ -456,14 +477,19 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             const SizedBox(
               height: 104,
               child: EmptyState(
-                message: 'No records of this day in the Wired.',
+                message: 'No check-ins or journal entries on this day.',
               ),
             )
           else
             Flexible(
               child: ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                padding: const EdgeInsets.fromLTRB(
+                  NdSpace.page,
+                  0,
+                  NdSpace.page,
+                  NdSpace.lg,
+                ),
                 children: rows,
               ),
             ),
@@ -484,34 +510,25 @@ class _HabitLogRow extends StatelessWidget {
     final p = context.palette;
     final color = habitDotColors[habit.colorIndex % habitDotColors.length];
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: NdSpace.sm),
       child: Row(
         children: [
-          PixelIcon(Px.habitIcon(habit.icon), color: color, size: 16),
-          const SizedBox(width: 12),
+          NdIcon(Nd.habitIcon(habit.icon), color: color, size: 18),
+          const SizedBox(width: NdSpace.md),
           Expanded(
             child: Text(
-              habit.name.toUpperCase(),
+              habit.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: kFontTerminal,
-                fontSize: 20,
-                height: 1.05,
-                color: p.text,
-              ),
+              style: p.row.copyWith(fontSize: 15),
             ),
           ),
           Text(
             hhmm(log.at.hour * 60 + log.at.minute),
-            style: TextStyle(
-              fontFamily: kFontTerminal,
-              fontSize: 15,
-              color: p.textDim,
-            ),
+            style: p.dot(14, color: p.textDim),
           ),
-          const SizedBox(width: 10),
-          PixelIcon(Px.check, color: p.accent, size: 13),
+          const SizedBox(width: NdSpace.md),
+          NdIcon(Nd.check, color: p.accent, size: 16),
         ],
       ),
     );
@@ -523,47 +540,38 @@ class _JournalRow extends StatelessWidget {
 
   final JournalEntry entry;
 
-  static PixelGlyph _glyph(JournalType type) => switch (type) {
-    JournalType.text => Px.textLines,
-    JournalType.photo => Px.photo,
-    JournalType.video => Px.video,
-    JournalType.audio => Px.mic,
+  static NdGlyph _glyph(JournalType type) => switch (type) {
+    JournalType.text => Nd.textLines,
+    JournalType.photo => Nd.photo,
+    JournalType.video => Nd.video,
+    JournalType.audio => Nd.mic,
   };
 
   String get _preview {
     final line = entry.body.trim().split('\n').first.trim();
-    return line.isEmpty ? '[${entry.type.label}]' : line;
+    return line.isEmpty ? entry.type.label : line;
   }
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: NdSpace.sm),
       child: Row(
         children: [
-          PixelIcon(_glyph(entry.type), color: p.journalDot, size: 16),
-          const SizedBox(width: 12),
+          NdIcon(_glyph(entry.type), color: p.journalDot, size: 18),
+          const SizedBox(width: NdSpace.md),
           Expanded(
             child: Text(
               _preview,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: kFontTerminal,
-                fontSize: 20,
-                height: 1.05,
-                color: p.textDim,
-              ),
+              style: p.row.copyWith(fontSize: 15, color: p.textDim),
             ),
           ),
           Text(
             hhmm(entry.at.hour * 60 + entry.at.minute),
-            style: TextStyle(
-              fontFamily: kFontTerminal,
-              fontSize: 15,
-              color: p.textDim,
-            ),
+            style: p.dot(14, color: p.textDim),
           ),
         ],
       ),
@@ -587,7 +595,10 @@ class _Reveal extends StatelessWidget {
       curve: Interval(delay / total, 1, curve: Curves.easeOutCubic),
       builder: (context, t, child) => Opacity(
         opacity: t,
-        child: Transform.translate(offset: Offset(0, 14 * (1 - t)), child: child),
+        child: Transform.translate(
+          offset: Offset(0, 14 * (1 - t)),
+          child: child,
+        ),
       ),
       child: child,
     );

@@ -6,8 +6,8 @@ import '../../services/schedule_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
 import '../../widgets/app_picker_sheet.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import '../../widgets/tactile.dart';
 
 Color eventTypeColor(NaviPalette p, EventType type) => switch (type) {
@@ -31,7 +31,7 @@ Future<void> showEventEditSheet(
   int? startMin,
   int? endMin,
 }) {
-  return showPixelSheet<void>(
+  return showNdSheet<void>(
     context: context,
     builder: (context) => _EventEditSheet(
       event: event,
@@ -73,8 +73,18 @@ class _EventEditSheetState extends State<_EventEditSheet> {
   final _retired = <FixedExtentScrollController>[];
 
   static const _monthsShort = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   bool get _isEditing => widget.event != null;
@@ -206,7 +216,7 @@ class _EventEditSheetState extends State<_EventEditSheet> {
     final store = ScheduleScope.of(context);
     final nav = Navigator.of(context);
     await store.remove(widget.event!);
-    Sfx.glitch();
+    Sfx.tick();
     nav.pop();
   }
 
@@ -216,11 +226,11 @@ class _EventEditSheetState extends State<_EventEditSheet> {
     if (d == 0) d = 1440;
     final h = d ~/ 60;
     final m = d % 60;
-    return [if (h > 0) '${h}H', if (m > 0) '${m}M'].join(' ');
+    return [if (h > 0) '${h}h', if (m > 0) '${m}m'].join(' ');
   }
 
   String get _anchorLabel =>
-      '${_monthsShort[_anchorDay.month - 1]} ${_anchorDay.day} ${_anchorDay.year}';
+      '${_anchorDay.day} ${_monthsShort[_anchorDay.month - 1]} ${_anchorDay.year}';
 
   @override
   Widget build(BuildContext context) {
@@ -228,266 +238,246 @@ class _EventEditSheetState extends State<_EventEditSheet> {
     final isAlarm = _type == EventType.alarm;
     return SafeArea(
       top: false,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(width: 8, height: 8, color: eventTypeColor(p, _type)),
-                const SizedBox(width: 10),
-                Text(
-                  _isEditing ? 'EDIT EVENT' : 'NEW EVENT',
-                  style: p.h2.copyWith(color: p.text),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NdSheetHeader(
+            title: _isEditing ? 'Edit event' : 'New event',
+            actions: [
+              if (_repeat == EventRepeat.never)
+                Padding(
+                  padding: const EdgeInsets.only(right: NdSpace.sm),
+                  child: Text(_anchorLabel, style: p.label),
                 ),
-                const Spacer(),
-                if (_repeat == EventRepeat.never)
-                  Text(
-                    _anchorLabel,
-                    style: TextStyle(
-                      fontFamily: kFontTerminal,
-                      fontSize: 16,
-                      color: p.textDim,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            PixelTextField(
-              controller: _titleCtrl,
-              hint: 'Event title...',
-              fontSize: 22,
-            ),
-            const SizedBox(height: 20),
+            ],
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                NdSpace.page,
+                0,
+                NdSpace.page,
+                NdSpace.lg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  NdTextField(controller: _titleCtrl, hint: 'Event title'),
+                  const SizedBox(height: NdSpace.xl),
 
-            Text('TYPE', style: p.h2),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final type in EventType.values)
-                  PixelChip(
-                    label: type.label,
-                    selected: _type == type,
-                    onTap: () => _setType(type),
+                  Text('TYPE', style: p.h2),
+                  const SizedBox(height: NdSpace.md),
+                  Wrap(
+                    spacing: NdSpace.sm,
+                    runSpacing: NdSpace.sm,
+                    children: [
+                      for (final type in EventType.values)
+                        NdChip(
+                          label: type.label,
+                          selected: _type == type,
+                          onTap: () => _setType(type),
+                        ),
+                    ],
                   ),
-              ],
-            ),
-            const SizedBox(height: 20),
+                  const SizedBox(height: NdSpace.xl),
 
-            Text('TIME', style: p.h2),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _TimeChip(
-                    label: 'START',
-                    minutes: _startMin,
-                    active: _editing == _TimeField.start,
-                    onTap: () => _toggleField(_TimeField.start),
+                  Text('TIME', style: p.h2),
+                  const SizedBox(height: NdSpace.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _TimeChip(
+                          label: 'Starts',
+                          minutes: _startMin,
+                          active: _editing == _TimeField.start,
+                          onTap: () => _toggleField(_TimeField.start),
+                        ),
+                      ),
+                      if (!isAlarm) ...[
+                        const SizedBox(width: NdSpace.md),
+                        Expanded(
+                          child: _TimeChip(
+                            label: 'Ends',
+                            minutes: _endMin,
+                            active: _editing == _TimeField.end,
+                            onTap: () => _toggleField(_TimeField.end),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ),
-                if (!isAlarm) ...[
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _TimeChip(
-                      label: 'END',
-                      minutes: _endMin,
-                      active: _editing == _TimeField.end,
-                      onTap: () => _toggleField(_TimeField.end),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    child: _editing == null
+                        ? const SizedBox(width: double.infinity)
+                        : Padding(
+                            padding: const EdgeInsets.only(top: NdSpace.md),
+                            child: SizedBox(
+                              height: 140,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  NdWheel(
+                                    itemCount: 24,
+                                    controller: _hourCtrl!,
+                                    labelFor: (i) =>
+                                        i.toString().padLeft(2, '0'),
+                                    fontSize: 38,
+                                    onChanged: (i) =>
+                                        _wheelChanged(hour: i % 24),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: NdSpace.xs,
+                                    ),
+                                    child: Text(
+                                      ':',
+                                      style: p.dot(34, color: p.textGhost),
+                                    ),
+                                  ),
+                                  NdWheel(
+                                    itemCount: 60,
+                                    controller: _minCtrl!,
+                                    labelFor: (i) =>
+                                        i.toString().padLeft(2, '0'),
+                                    fontSize: 38,
+                                    onChanged: (i) =>
+                                        _wheelChanged(minute: i % 60),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                  ),
+                  if (!isAlarm)
+                    Padding(
+                      padding: const EdgeInsets.only(top: NdSpace.md),
+                      child: Row(
+                        children: [
+                          Text('Duration', style: p.label),
+                          const Spacer(),
+                          Text(
+                            _durationLabel,
+                            style: p.label.copyWith(color: p.accent),
+                          ),
+                        ],
+                      ),
                     ),
+                  const SizedBox(height: NdSpace.xl),
+
+                  Text('REPEAT', style: p.h2),
+                  const SizedBox(height: NdSpace.md),
+                  Wrap(
+                    spacing: NdSpace.sm,
+                    runSpacing: NdSpace.sm,
+                    children: [
+                      for (final repeat in EventRepeat.values)
+                        NdChip(
+                          label: repeat.label,
+                          selected: _repeat == repeat,
+                          onTap: () => _setRepeat(repeat),
+                        ),
+                    ],
+                  ),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    child: _repeat == EventRepeat.custom
+                        ? Padding(
+                            padding: const EdgeInsets.only(top: NdSpace.md),
+                            child: DayPicker(
+                              dayBits: _dayBits,
+                              onChanged: (bits) =>
+                                  setState(() => _dayBits = bits),
+                            ),
+                          )
+                        : const SizedBox(width: double.infinity),
+                  ),
+
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    child: switch (_type) {
+                      EventType.appBlock => Padding(
+                        padding: const EdgeInsets.only(top: NdSpace.xl),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text('APPS TO BLOCK', style: p.h2),
+                            const SizedBox(height: NdSpace.md),
+                            NdButton(
+                              label: _packages.isEmpty
+                                  ? 'Choose apps'
+                                  : '${_packages.length} app'
+                                        '${_packages.length == 1 ? '' : 's'} selected',
+                              glyph: Nd.grid,
+                              expand: true,
+                              height: 48,
+                              onTap: _pickApps,
+                            ),
+                          ],
+                        ),
+                      ),
+                      EventType.alarm => Padding(
+                        padding: const EdgeInsets.only(top: NdSpace.xl),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text('SNOOZE', style: p.h2),
+                            const SizedBox(height: NdSpace.md),
+                            Row(
+                              children: [
+                                for (final m in const [5, 10, 15]) ...[
+                                  NdChip(
+                                    label: '$m min',
+                                    selected: _snooze == m,
+                                    onTap: () => setState(() => _snooze = m),
+                                  ),
+                                  const SizedBox(width: NdSpace.sm),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      _ => const SizedBox(width: double.infinity),
+                    },
+                  ),
+                  const SizedBox(height: NdSpace.xxl),
+
+                  Row(
+                    children: [
+                      if (_isEditing)
+                        NdButton(
+                          label: 'Delete',
+                          danger: true,
+                          height: 46,
+                          onTap: _delete,
+                        ),
+                      const Spacer(),
+                      DialogAction(
+                        label: 'Cancel',
+                        onTap: () => Navigator.of(context).pop(),
+                      ),
+                      const SizedBox(width: NdSpace.xs),
+                      NdButton(
+                        label: 'Save',
+                        filled: true,
+                        height: 46,
+                        onTap: _save,
+                      ),
+                    ],
                   ),
                 ],
-              ],
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child: _editing == null
-                  ? const SizedBox(width: double.infinity)
-                  : Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: SizedBox(
-                        height: 132,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            PixelWheel(
-                              itemCount: 24,
-                              controller: _hourCtrl!,
-                              labelFor: (i) => i.toString().padLeft(2, '0'),
-                              fontSize: 38,
-                              onChanged: (i) => _wheelChanged(hour: i % 24),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 6),
-                              child: Text(
-                                ':',
-                                style: TextStyle(
-                                  fontFamily: kFontTerminal,
-                                  fontSize: 38,
-                                  color: p.accent,
-                                  height: 1,
-                                ),
-                              ),
-                            ),
-                            PixelWheel(
-                              itemCount: 60,
-                              controller: _minCtrl!,
-                              labelFor: (i) => i.toString().padLeft(2, '0'),
-                              fontSize: 38,
-                              onChanged: (i) => _wheelChanged(minute: i % 60),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-            ),
-            if (!isAlarm)
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Row(
-                  children: [
-                    Text('DURATION', style: p.label),
-                    const Spacer(),
-                    Text(
-                      _durationLabel,
-                      style: TextStyle(
-                        fontFamily: kFontTerminal,
-                        fontSize: 17,
-                        color: p.accentMid,
-                      ),
-                    ),
-                  ],
-                ),
               ),
-            const SizedBox(height: 20),
-
-            Text('REPEAT', style: p.h2),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final repeat in EventRepeat.values)
-                  PixelChip(
-                    label: repeat.label,
-                    selected: _repeat == repeat,
-                    onTap: () => _setRepeat(repeat),
-                  ),
-              ],
             ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child: _repeat == EventRepeat.custom
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: DayPicker(
-                        dayBits: _dayBits,
-                        onChanged: (bits) => setState(() => _dayBits = bits),
-                      ),
-                    )
-                  : const SizedBox(width: double.infinity),
-            ),
-
-            AnimatedSize(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child: switch (_type) {
-                EventType.appBlock => Padding(
-                    padding: const EdgeInsets.only(top: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text('APPS', style: p.h2),
-                        const SizedBox(height: 10),
-                        PixelButton(
-                          label: 'SELECT APPS (${_packages.length})',
-                          glyph: Px.grid,
-                          expand: true,
-                          height: 44,
-                          onTap: _pickApps,
-                        ),
-                      ],
-                    ),
-                  ),
-                EventType.alarm => Padding(
-                    padding: const EdgeInsets.only(top: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text('SNOOZE', style: p.h2),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            for (final m in const [5, 10, 15]) ...[
-                              PixelChip(
-                                label: '$m MIN',
-                                selected: _snooze == m,
-                                onTap: () => setState(() => _snooze = m),
-                              ),
-                              const SizedBox(width: 8),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Text('SOUND', style: p.label),
-                            const Spacer(),
-                            PixelIcon(Px.bell, color: p.accent, size: 12),
-                            const SizedBox(width: 8),
-                            Text(
-                              'BLAST',
-                              style: TextStyle(
-                                fontFamily: kFontTerminal,
-                                fontSize: 20,
-                                color: p.text,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                _ => const SizedBox(width: double.infinity),
-              },
-            ),
-            const SizedBox(height: 26),
-
-            Row(
-              children: [
-                if (_isEditing)
-                  PixelButton(
-                    label: 'DELETE',
-                    danger: true,
-                    height: 44,
-                    onTap: _delete,
-                  ),
-                const Spacer(),
-                DialogAction(
-                  label: 'CANCEL',
-                  onTap: () => Navigator.of(context).pop(),
-                ),
-                const SizedBox(width: 8),
-                PixelButton(
-                  label: 'SAVE',
-                  filled: true,
-                  height: 44,
-                  onTap: _save,
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -519,32 +509,26 @@ class _TimeChip extends StatelessWidget {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(
+            horizontal: NdSpace.lg,
+            vertical: NdSpace.md,
+          ),
           decoration: BoxDecoration(
-            color: active
-                ? p.accentGhost.withValues(alpha: 0.4)
-                : Colors.transparent,
-            border: Border.all(
-              color: active ? p.accent : p.border,
-              width: 1.5,
-            ),
+            color: p.panelHi,
+            borderRadius: BorderRadius.circular(NdRadius.inner),
+            border: Border.all(color: active ? p.accent : p.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: p.label.copyWith(color: active ? p.accent : p.textDim),
+                style: p.micro.copyWith(color: active ? p.accent : p.textDim),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: NdSpace.xs),
               Text(
                 hhmm(minutes),
-                style: TextStyle(
-                  fontFamily: kFontTerminal,
-                  fontSize: 30,
-                  height: 1,
-                  color: active ? p.accent : p.text,
-                ),
+                style: p.dot(28, color: active ? p.accent : p.text),
               ),
             ],
           ),

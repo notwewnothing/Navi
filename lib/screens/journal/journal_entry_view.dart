@@ -11,19 +11,29 @@ import '../../services/journal_store.dart';
 import '../../services/media_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import '../../widgets/tactile.dart';
 
 const _monthsAbbr = [
-  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 String _two(int v) => v.toString().padLeft(2, '0');
 
 String journalStamp(DateTime at) =>
-    '${_monthsAbbr[at.month - 1]} ${at.day} — ${_two(at.hour)}:${_two(at.minute)}';
+    '${at.day} ${_monthsAbbr[at.month - 1]} · ${_two(at.hour)}:${_two(at.minute)}';
 
 String journalHm(DateTime at) => '${_two(at.hour)}:${_two(at.minute)}';
 
@@ -32,11 +42,11 @@ String journalDuration(int? ms) {
   return '${s ~/ 60}:${_two(s % 60)}';
 }
 
-PixelGlyph journalTypeGlyph(JournalType type) => switch (type) {
-  JournalType.text => Px.textLines,
-  JournalType.photo => Px.photo,
-  JournalType.video => Px.video,
-  JournalType.audio => Px.mic,
+NdGlyph journalTypeGlyph(JournalType type) => switch (type) {
+  JournalType.text => Nd.textLines,
+  JournalType.photo => Nd.photo,
+  JournalType.video => Nd.video,
+  JournalType.audio => Nd.mic,
 };
 
 class MediaImage extends StatefulWidget {
@@ -88,9 +98,7 @@ class _MediaImageState extends State<MediaImage> {
               key: const ValueKey('media_placeholder'),
               color: p.panelHi,
               child: _resolved
-                  ? Center(
-                      child: PixelIcon(Px.x, color: p.textGhost, size: 14),
-                    )
+                  ? Center(child: NdIcon(Nd.x, color: p.textGhost, size: 20))
                   : null,
             )
           : SizedBox.expand(
@@ -103,7 +111,7 @@ class _MediaImageState extends State<MediaImage> {
                 errorBuilder: (_, _, _) => Container(
                   color: p.panelHi,
                   child: Center(
-                    child: PixelIcon(Px.x, color: p.textGhost, size: 14),
+                    child: NdIcon(Nd.x, color: p.textGhost, size: 20),
                   ),
                 ),
               ),
@@ -123,8 +131,9 @@ class JournalEntryView extends StatefulWidget {
 
 class _JournalEntryViewState extends State<JournalEntryView> {
   bool _editing = false;
-  late final TextEditingController _textController =
-      TextEditingController(text: widget.entry.body);
+  late final TextEditingController _textController = TextEditingController(
+    text: widget.entry.body,
+  );
 
   VideoPlayerController? _video;
   bool _videoReady = false;
@@ -159,7 +168,6 @@ class _JournalEntryViewState extends State<JournalEntryView> {
     _audio?.dispose();
     super.dispose();
   }
-
 
   Future<void> _initVideo() async {
     final file = await MediaStore.fileFor(widget.entry.mediaPath);
@@ -200,7 +208,6 @@ class _JournalEntryViewState extends State<JournalEntryView> {
     }
     setState(() {});
   }
-
 
   Future<void> _initAudio() async {
     final file = await MediaStore.fileFor(widget.entry.mediaPath);
@@ -256,7 +263,6 @@ class _JournalEntryViewState extends State<JournalEntryView> {
     } catch (_) {}
   }
 
-
   Future<void> _saveTextEdit() async {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
@@ -266,42 +272,40 @@ class _JournalEntryViewState extends State<JournalEntryView> {
     if (!mounted) return;
     Sfx.complete();
     setState(() => _editing = false);
-    showPixelToast(context, 'ENTRY REWRITTEN', glyph: Px.check);
+    showNdToast(context, 'Entry updated', glyph: Nd.check);
   }
-
 
   void _confirmDelete() {
     final p = context.palette;
     final journal = JournalScope.of(context);
     final navigator = Navigator.of(context);
-    showPixelDialog<void>(
+    showNdDialog<void>(
       context: context,
-      title: 'ERASE FROM THE WIRED?',
+      title: 'Delete this entry?',
       builder: (_) => Text(
-        'This entry and its media will be deleted. '
-        'If it is not remembered, it never happened.',
-        style: p.body,
+        'The entry and any photo, video or recording attached to it are '
+        'removed for good.',
+        style: p.bodyDim,
       ),
       actions: (dialogContext) => [
         DialogAction(
-          label: 'CANCEL',
+          label: 'Cancel',
           onTap: () => Navigator.pop(dialogContext),
         ),
         DialogAction(
-          label: 'ERASE',
+          label: 'Delete',
           danger: true,
           onTap: () async {
             Navigator.pop(dialogContext);
             HapticFeedback.heavyImpact();
             await journal.remove(widget.entry);
-            Sfx.glitch();
+            Sfx.tick();
             navigator.pop();
           },
         ),
       ],
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -311,45 +315,50 @@ class _JournalEntryViewState extends State<JournalEntryView> {
       body: SafeArea(
         child: Column(
           children: [
-            PixelHeader(
+            NdHeader(
               title: entry.type.label,
-              leading: PixelIconButton(
-                glyph: Px.left,
+              subtitle: journalStamp(entry.at),
+              leading: NdIconButton(
+                glyph: Nd.left,
                 onTap: () => Navigator.pop(context),
               ),
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Text(journalStamp(entry.at), style: p.label),
-                ),
-              ],
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                padding: const EdgeInsets.fromLTRB(
+                  NdSpace.page,
+                  NdSpace.sm,
+                  NdSpace.page,
+                  NdSpace.xl,
+                ),
                 children: [
                   ..._body(p, entry),
                   if (entry.type != JournalType.text &&
                       entry.body.isNotEmpty) ...[
-                    const SizedBox(height: 14),
+                    const SizedBox(height: NdSpace.lg),
                     Text(entry.body, style: p.body),
                   ],
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              padding: const EdgeInsets.fromLTRB(
+                NdSpace.page,
+                NdSpace.xs,
+                NdSpace.page,
+                NdSpace.md,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   if (entry.type == JournalType.text && !_editing)
                     DialogAction(
-                      label: 'EDIT',
+                      label: 'Edit',
                       onTap: () => setState(() => _editing = true),
                     ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: NdSpace.xs),
                   DialogAction(
-                    label: 'DELETE',
+                    label: 'Delete',
                     danger: true,
                     onTap: _confirmDelete,
                   ),
@@ -371,40 +380,32 @@ class _JournalEntryViewState extends State<JournalEntryView> {
 
   Widget _textBody(NaviPalette p, JournalEntry entry) {
     if (!_editing) {
-      return Text(
-        entry.body,
-        style: TextStyle(
-          fontFamily: kFontTerminal,
-          fontSize: 22,
-          color: p.text,
-          height: 1.2,
-        ),
-      );
+      return Text(entry.body, style: p.body.copyWith(fontSize: 17));
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        PixelTextField(
+        NdTextField(
           controller: _textController,
           maxLines: null,
           autofocus: true,
-          fontSize: 22,
+          fontSize: 17,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: NdSpace.lg),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             DialogAction(
-              label: 'CANCEL',
+              label: 'Cancel',
               onTap: () {
                 _textController.text = entry.body;
                 setState(() => _editing = false);
               },
             ),
-            const SizedBox(width: 8),
-            PixelButton(
-              label: 'SAVE',
-              height: 38,
+            const SizedBox(width: NdSpace.xs),
+            NdButton(
+              label: 'Save',
+              height: 42,
               filled: true,
               onTap: _saveTextEdit,
             ),
@@ -415,27 +416,36 @@ class _JournalEntryViewState extends State<JournalEntryView> {
   }
 
   Widget _photoBody() {
-    return Container(
-      height: 430,
-      color: Colors.black,
-      child: InteractiveViewer(
-        maxScale: 6,
-        child: Center(child: MediaImage(widget.entry.mediaPath, fit: BoxFit.contain)),
+    final p = context.palette;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(NdRadius.card),
+      child: Container(
+        height: 430,
+        color: p.panel,
+        child: InteractiveViewer(
+          maxScale: 6,
+          child: Center(
+            child: MediaImage(widget.entry.mediaPath, fit: BoxFit.contain),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _missingTile(NaviPalette p) => Container(
-    height: 200,
-    color: p.panelHi,
-    child: Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          PixelIcon(Px.x, color: p.textGhost, size: 20),
-          const SizedBox(height: 10),
-          Text('SIGNAL LOST — FILE MISSING', style: p.label),
-        ],
+  Widget _missingTile(NaviPalette p) => ClipRRect(
+    borderRadius: BorderRadius.circular(NdRadius.card),
+    child: Container(
+      height: 200,
+      color: p.panel,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            NdIcon(Nd.x, color: p.textGhost, size: 24),
+            const SizedBox(height: NdSpace.md),
+            Text('This file is no longer on the device', style: p.label),
+          ],
+        ),
       ),
     ),
   );
@@ -444,10 +454,13 @@ class _JournalEntryViewState extends State<JournalEntryView> {
     if (_mediaMissing) return _missingTile(p);
     final video = _video;
     if (!_videoReady || video == null) {
-      return Container(
-        height: 260,
-        color: Colors.black,
-        child: Center(child: Text('DECODING...', style: p.label)),
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(NdRadius.card),
+        child: Container(
+          height: 260,
+          color: p.panel,
+          child: Center(child: Text('Loading video...', style: p.label)),
+        ),
       );
     }
     final value = video.value;
@@ -461,57 +474,60 @@ class _JournalEntryViewState extends State<JournalEntryView> {
           pressedScale: 0.99,
           child: GestureDetector(
             onTap: _toggleVideo,
-            child: Container(
-              color: Colors.black,
-              child: AspectRatio(
-                aspectRatio: ratio,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    VideoPlayer(video),
-                    AnimatedOpacity(
-                      opacity: value.isPlaying ? 0 : 1,
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOut,
-                      child: Container(
-                        color: Colors.black.withValues(alpha: 0.4),
-                        child: Center(
-                          child: PixelIcon(Px.play, color: p.accent, size: 34),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(NdRadius.card),
+              child: Container(
+                color: p.panel,
+                child: AspectRatio(
+                  aspectRatio: ratio,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      VideoPlayer(video),
+                      AnimatedOpacity(
+                        opacity: value.isPlaying ? 0 : 1,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOut,
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          child: Center(
+                            child: Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color: p.accent,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: NdIcon(
+                                  Nd.play,
+                                  color: p.onAccent,
+                                  size: 30,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        PixelProgressBar(
+        const SizedBox(height: NdSpace.lg),
+        NdProgressBar(
           value: durMs == 0 ? 0 : posMs / durMs,
           segments: 28,
-          height: 8,
+          height: 6,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: NdSpace.sm),
         Row(
           children: [
-            Text(
-              journalDuration(posMs),
-              style: TextStyle(
-                fontFamily: kFontTerminal,
-                fontSize: 20,
-                color: p.textDim,
-              ),
-            ),
+            Text(journalDuration(posMs), style: p.dot(16, color: p.textDim)),
             const Spacer(),
-            Text(
-              journalDuration(durMs),
-              style: TextStyle(
-                fontFamily: kFontTerminal,
-                fontSize: 20,
-                color: p.textDim,
-              ),
-            ),
+            Text(journalDuration(durMs), style: p.dot(16, color: p.textDim)),
           ],
         ),
       ],
@@ -524,8 +540,8 @@ class _JournalEntryViewState extends State<JournalEntryView> {
         ? _audioDur.inMilliseconds
         : (entry.durationMs ?? 0);
     final posMs = _audioPos.inMilliseconds;
-    return PixelCard(
-      padding: const EdgeInsets.all(18),
+    return NdCard(
+      padding: const EdgeInsets.all(NdSpace.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -540,57 +556,41 @@ class _JournalEntryViewState extends State<JournalEntryView> {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: _audioPlaying ? p.accentGhost : Colors.transparent,
-                      border: Border.all(color: p.accent, width: 1.5),
+                      shape: BoxShape.circle,
+                      color: p.accent,
                     ),
                     child: Center(
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 150),
                         transitionBuilder: (child, animation) =>
                             ScaleTransition(scale: animation, child: child),
-                        child: PixelIcon(
-                          _audioPlaying ? Px.pause : Px.play,
+                        child: NdIcon(
+                          _audioPlaying ? Nd.pause : Nd.play,
                           key: ValueKey(_audioPlaying),
-                          color: p.accent,
-                          size: 24,
+                          color: p.onAccent,
+                          size: 28,
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 18),
+              const SizedBox(width: NdSpace.xl),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    journalDuration(posMs),
-                    style: TextStyle(
-                      fontFamily: kFontTerminal,
-                      fontSize: 44,
-                      color: p.text,
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '/ ${journalDuration(totalMs)}',
-                    style: TextStyle(
-                      fontFamily: kFontTerminal,
-                      fontSize: 20,
-                      color: p.textDim,
-                      height: 1,
-                    ),
-                  ),
+                  Text(journalDuration(posMs), style: p.dot(40, color: p.text)),
+                  const SizedBox(height: NdSpace.xs),
+                  Text('of ${journalDuration(totalMs)}', style: p.label),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          PixelProgressBar(
+          const SizedBox(height: NdSpace.xl),
+          NdProgressBar(
             value: totalMs == 0 ? 0 : posMs / totalMs,
             segments: 28,
-            height: 8,
+            height: 6,
           ),
         ],
       ),
