@@ -4,14 +4,14 @@ import 'package:flutter/services.dart';
 import '../services/app_blocker.dart';
 import '../services/app_icons.dart';
 import '../theme/palette.dart';
-import 'pixel_icons.dart';
-import 'pixel_widgets.dart';
+import 'nd_icons.dart';
+import 'nd_widgets.dart';
 
 Future<List<String>?> showAppPickerSheet(
   BuildContext context, {
   List<String> initial = const [],
 }) {
-  return showPixelSheet<List<String>>(
+  return showNdSheet<List<String>>(
     context: context,
     builder: (context) => _AppPickerSheet(initial: initial),
   );
@@ -39,24 +39,27 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-            child: Row(
-              children: [
-                Text('SELECT APPS', style: p.h2.copyWith(color: p.text)),
-                const Spacer(),
-                Text(
-                  '${_selected.length} SELECTED',
+          NdSheetHeader(
+            title: 'Choose apps',
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: NdSpace.sm),
+                child: Text(
+                  '${_selected.length} selected',
                   style: p.label.copyWith(color: p.accent),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-            child: PixelTextField(
-              hint: 'Search...',
-              fontSize: 20,
+            padding: const EdgeInsets.fromLTRB(
+              NdSpace.page,
+              0,
+              NdSpace.page,
+              NdSpace.xs,
+            ),
+            child: NdTextField(
+              hint: 'Search apps',
               capitalization: TextCapitalization.none,
               onChanged: (value) =>
                   setState(() => _query = value.trim().toLowerCase()),
@@ -68,7 +71,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return Center(
-                    child: Text('SCANNING...', style: p.label),
+                    child: Text('Loading installed apps...', style: p.label),
                   );
                 }
                 final all = snapshot.data ?? const <InstalledApp>[];
@@ -81,12 +84,14 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                             app,
                       ];
                 if (apps.isEmpty) {
-                  return const EmptyState(message: 'No apps found.');
+                  return const EmptyState(
+                    message: 'No apps match that search.',
+                  );
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
+                    horizontal: NdSpace.page,
+                    vertical: NdSpace.sm,
                   ),
                   itemCount: apps.length,
                   itemBuilder: (context, i) {
@@ -99,7 +104,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                         HapticFeedback.selectionClick();
                         setState(() {
                           // Set.add returns false on duplicates, so this doubles as the toggle
-                        if (!_selected.add(app.packageName)) {
+                          if (!_selected.add(app.packageName)) {
                             _selected.remove(app.packageName);
                           }
                         });
@@ -111,22 +116,27 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            padding: const EdgeInsets.fromLTRB(
+              NdSpace.md,
+              NdSpace.sm,
+              NdSpace.page,
+              NdSpace.lg,
+            ),
             child: Row(
               children: [
                 DialogAction(
-                  label: 'CLEAR',
+                  label: 'Clear all',
                   onTap: () => setState(_selected.clear),
                 ),
                 const Spacer(),
                 DialogAction(
-                  label: 'CANCEL',
+                  label: 'Cancel',
                   onTap: () => Navigator.of(context).pop(),
                 ),
-                const SizedBox(width: 8),
-                PixelButton(
-                  label: 'SAVE',
-                  height: 40,
+                const SizedBox(width: NdSpace.xs),
+                NdButton(
+                  label: 'Save',
+                  height: 46,
                   filled: true,
                   onTap: () => Navigator.of(context).pop(_selected.toList()),
                 ),
@@ -157,44 +167,44 @@ class _AppRow extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
+        padding: const EdgeInsets.symmetric(vertical: NdSpace.sm),
         child: Row(
           children: [
-            AppIconImage(packageName: app.packageName, size: 26),
-            const SizedBox(width: 12),
+            AppIconImage(packageName: app.packageName, size: 34),
+            const SizedBox(width: NdSpace.lg),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    app.label.toUpperCase(),
+                    app.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: kFontTerminal,
-                      fontSize: 21,
-                      height: 1.05,
-                      color: selected ? p.text : p.textDim,
-                    ),
+                    style: p.row.copyWith(color: selected ? p.text : p.textDim),
                   ),
+                  const SizedBox(height: 1),
                   Text(
                     app.packageName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: kFontTerminal,
-                      fontSize: 13,
-                      color: p.textGhost,
-                    ),
+                    style: p.label.copyWith(fontSize: 11, color: p.textGhost),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            PixelIcon(
-              selected ? Px.check : Px.circle,
-              color: selected ? p.accent : p.textGhost,
-              size: 15,
+            const SizedBox(width: NdSpace.md),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? p.accent : Colors.transparent,
+                border: Border.all(color: selected ? p.accent : p.borderHi),
+              ),
+              child: selected
+                  ? Center(child: NdIcon(Nd.check, color: p.onAccent, size: 15))
+                  : null,
             ),
           ],
         ),
@@ -220,32 +230,30 @@ class AppIconImage extends StatelessWidget {
           return Container(
             width: size,
             height: size,
-            color: p.panelHi,
+            decoration: BoxDecoration(
+              color: p.panelHi,
+              borderRadius: BorderRadius.circular(size * 0.28),
+            ),
             alignment: Alignment.center,
             child: Text(
               packageName.isNotEmpty
-                  ? packageName
-                        .split('.')
-                        .last
-                        .substring(0, 1)
-                        .toUpperCase()
+                  ? packageName.split('.').last.substring(0, 1).toUpperCase()
                   : '?',
-              style: TextStyle(
-                fontFamily: kFontPixel,
-                fontSize: size * 0.4,
-                color: p.textDim,
-              ),
+              style: p.dot(size * 0.45, color: p.textDim),
             ),
           );
         }
-        return Image.memory(
-          bytes,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          filterQuality: FilterQuality.none,
-          errorBuilder: (_, _, _) =>
-              Container(width: size, height: size, color: p.panelHi),
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(size * 0.28),
+          child: Image.memory(
+            bytes,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, _, _) =>
+                Container(width: size, height: size, color: p.panelHi),
+          ),
         );
       },
     );

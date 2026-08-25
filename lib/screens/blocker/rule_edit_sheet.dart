@@ -6,13 +6,13 @@ import '../../services/block_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
 import '../../widgets/app_picker_sheet.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import '../../widgets/tactile.dart';
 
 Future<void> showRuleEditSheet(BuildContext context, {BlockRule? rule}) {
   final store = BlockScope.of(context);
-  return showPixelSheet<void>(
+  return showNdSheet<void>(
     context: context,
     builder: (_) => _RuleEditSheet(store: store, rule: rule),
   );
@@ -39,13 +39,16 @@ class _RuleEditSheetState extends State<_RuleEditSheet> {
   late bool _enabled = widget.rule?.enabled ?? true;
   _Field? _open;
 
-  late final _startHour =
-      FixedExtentScrollController(initialItem: _startMin ~/ 60);
-  late final _startMinute =
-      FixedExtentScrollController(initialItem: _startMin % 60);
+  late final _startHour = FixedExtentScrollController(
+    initialItem: _startMin ~/ 60,
+  );
+  late final _startMinute = FixedExtentScrollController(
+    initialItem: _startMin % 60,
+  );
   late final _endHour = FixedExtentScrollController(initialItem: _endMin ~/ 60);
-  late final _endMinute =
-      FixedExtentScrollController(initialItem: _endMin % 60);
+  late final _endMinute = FixedExtentScrollController(
+    initialItem: _endMin % 60,
+  );
 
   bool get _editing => widget.rule != null;
   bool get _overnight => _endMin < _startMin;
@@ -101,20 +104,20 @@ class _RuleEditSheetState extends State<_RuleEditSheet> {
   Future<void> _delete() async {
     final rule = widget.rule;
     if (rule == null) return;
-    final confirmed = await showPixelDialog<bool>(
+    final confirmed = await showNdDialog<bool>(
       context: context,
-      title: 'DELETE RULE',
+      title: 'Delete this rule?',
       builder: (context) => Text(
-        'Sever this rule? The blocked apps go free.',
-        style: context.palette.body,
+        'The apps it covers stop being blocked at these times.',
+        style: context.palette.bodyDim,
       ),
       actions: (context) => [
         DialogAction(
-          label: 'CANCEL',
+          label: 'Cancel',
           onTap: () => Navigator.of(context).pop(false),
         ),
         DialogAction(
-          label: 'DELETE',
+          label: 'Delete',
           danger: true,
           onTap: () => Navigator.of(context).pop(true),
         ),
@@ -124,7 +127,7 @@ class _RuleEditSheetState extends State<_RuleEditSheet> {
     await widget.store.removeRule(rule);
     if (!mounted) return;
     HapticFeedback.mediumImpact();
-    Sfx.glitch();
+    Sfx.tick();
     Navigator.of(context).pop();
   }
 
@@ -133,204 +136,212 @@ class _RuleEditSheetState extends State<_RuleEditSheet> {
     final p = context.palette;
     return SafeArea(
       top: false,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Text(
-                  _editing ? 'EDIT RULE' : 'NEW RULE',
-                  style: p.h2.copyWith(color: p.text),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NdSheetHeader(
+            title: _editing ? 'Edit rule' : 'New rule',
+            actions: [
+              if (_editing) ...[
+                Text('Active', style: p.label),
+                const SizedBox(width: NdSpace.md),
+                NdSwitch(
+                  value: _enabled,
+                  onChanged: (v) => setState(() => _enabled = v),
                 ),
-                const Spacer(),
-                if (_editing) ...[
-                  Text('ACTIVE', style: p.label),
-                  const SizedBox(width: 10),
-                  PixelSwitch(
-                    value: _enabled,
-                    onChanged: (v) => setState(() => _enabled = v),
-                  ),
-                ],
+                const SizedBox(width: NdSpace.sm),
               ],
-            ),
-            const SizedBox(height: 18),
-
-            PixelButton(
-              label: 'SELECT APPS (${_packages.length})',
-              glyph: Px.grid,
-              expand: true,
-              height: 46,
-              onTap: _pickApps,
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              alignment: Alignment.topCenter,
-              child: _packages.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        'AT LEAST 1 APP REQUIRED',
-                        style: p.label.copyWith(
-                          color: p.danger.withValues(alpha: 0.85),
-                        ),
-                      ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: AppIconStack(packages: _packages, size: 24),
-                      ),
-                    ),
-            ),
-            const SizedBox(height: 20),
-
-            Text('TIME WINDOW', style: p.h2),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _TimeChip(
-                    label: 'FROM',
-                    minutes: _startMin,
-                    open: _open == _Field.start,
-                    onTap: () => _toggleField(_Field.start),
+            ],
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                NdSpace.page,
+                0,
+                NdSpace.page,
+                NdSpace.lg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  NdButton(
+                    label: _packages.isEmpty
+                        ? 'Choose apps to block'
+                        : '${_packages.length} app'
+                              '${_packages.length == 1 ? '' : 's'} selected',
+                    glyph: Nd.grid,
+                    expand: true,
+                    height: 48,
+                    onTap: _pickApps,
                   ),
-                ),
-                const SizedBox(width: 8),
-                PixelIcon(Px.right, color: p.textGhost, size: 14),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _TimeChip(
-                    label: 'TO',
-                    minutes: _endMin,
-                    open: _open == _Field.end,
-                    onTap: () => _toggleField(_Field.end),
-                  ),
-                ),
-              ],
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child: switch (_open) {
-                null => const SizedBox(width: double.infinity),
-                final field => Padding(
-                  key: ValueKey(field),
-                  padding: const EdgeInsets.only(top: 14),
-                  child: SizedBox(
-                    height: 150,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        PixelWheel(
-                          itemCount: 24,
-                          controller: field == _Field.start
-                              ? _startHour
-                              : _endHour,
-                          labelFor: (i) => i.toString().padLeft(2, '0'),
-                          onChanged: (i) => setState(() {
-                            final h = i % 24;
-                            if (field == _Field.start) {
-                              _startMin = h * 60 + _startMin % 60;
-                            } else {
-                              _endMin = h * 60 + _endMin % 60;
-                            }
-                          }),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          child: Text(
-                            ':',
-                            style: TextStyle(
-                              fontFamily: kFontTerminal,
-                              fontSize: 40,
-                              color: p.accentDim,
-                              height: 1,
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    alignment: Alignment.topCenter,
+                    child: _packages.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.only(top: NdSpace.sm),
+                            child: Text(
+                              'Pick at least one app to save this rule',
+                              style: p.label.copyWith(color: p.danger),
+                            ),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.only(top: NdSpace.md),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: AppIconStack(
+                                packages: _packages,
+                                size: 24,
+                              ),
                             ),
                           ),
-                        ),
-                        PixelWheel(
-                          itemCount: 60,
-                          controller: field == _Field.start
-                              ? _startMinute
-                              : _endMinute,
-                          labelFor: (i) => i.toString().padLeft(2, '0'),
-                          onChanged: (i) => setState(() {
-                            final m = i % 60;
-                            if (field == _Field.start) {
-                              _startMin = (_startMin ~/ 60) * 60 + m;
-                            } else {
-                              _endMin = (_endMin ~/ 60) * 60 + m;
-                            }
-                          }),
-                        ),
-                      ],
-                    ),
                   ),
-                ),
-              },
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              alignment: Alignment.topCenter,
-              child: _overnight
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Row(
-                        children: [
-                          PixelIcon(Px.moon, color: p.sleepDot, size: 12),
-                          const SizedBox(width: 8),
-                          Text(
-                            'OVERNIGHT — ENDS NEXT DAY',
-                            style: p.label.copyWith(color: p.sleepDot),
-                          ),
-                        ],
+                  const SizedBox(height: NdSpace.xl),
+
+                  Text('TIME WINDOW', style: p.h2),
+                  const SizedBox(height: NdSpace.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _TimeChip(
+                          label: 'From',
+                          minutes: _startMin,
+                          open: _open == _Field.start,
+                          onTap: () => _toggleField(_Field.start),
+                        ),
                       ),
-                    )
-                  : const SizedBox(width: double.infinity),
-            ),
-            const SizedBox(height: 20),
-
-            Text('DAYS', style: p.h2),
-            const SizedBox(height: 10),
-            DayPicker(
-              dayBits: _dayBits,
-              onChanged: (bits) => setState(() => _dayBits = bits),
-            ),
-            const SizedBox(height: 24),
-
-            Row(
-              children: [
-                if (_editing)
-                  PixelButton(
-                    label: 'DELETE',
-                    danger: true,
-                    height: 44,
-                    onTap: _delete,
+                      const SizedBox(width: NdSpace.sm),
+                      NdIcon(Nd.right, color: p.textGhost, size: 18),
+                      const SizedBox(width: NdSpace.sm),
+                      Expanded(
+                        child: _TimeChip(
+                          label: 'To',
+                          minutes: _endMin,
+                          open: _open == _Field.end,
+                          onTap: () => _toggleField(_Field.end),
+                        ),
+                      ),
+                    ],
                   ),
-                const Spacer(),
-                DialogAction(
-                  label: 'CANCEL',
-                  onTap: () => Navigator.of(context).pop(),
-                ),
-                const SizedBox(width: 8),
-                PixelButton(
-                  label: 'SAVE',
-                  filled: true,
-                  height: 44,
-                  onTap: _packages.isEmpty ? null : _save,
-                ),
-              ],
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    child: switch (_open) {
+                      null => const SizedBox(width: double.infinity),
+                      final field => Padding(
+                        key: ValueKey(field),
+                        padding: const EdgeInsets.only(top: NdSpace.lg),
+                        child: SizedBox(
+                          height: 156,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              NdWheel(
+                                itemCount: 24,
+                                controller: field == _Field.start
+                                    ? _startHour
+                                    : _endHour,
+                                labelFor: (i) => i.toString().padLeft(2, '0'),
+                                onChanged: (i) => setState(() {
+                                  final h = i % 24;
+                                  if (field == _Field.start) {
+                                    _startMin = h * 60 + _startMin % 60;
+                                  } else {
+                                    _endMin = h * 60 + _endMin % 60;
+                                  }
+                                }),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: NdSpace.xs,
+                                ),
+                                child: Text(
+                                  ':',
+                                  style: p.dot(40, color: p.textGhost),
+                                ),
+                              ),
+                              NdWheel(
+                                itemCount: 60,
+                                controller: field == _Field.start
+                                    ? _startMinute
+                                    : _endMinute,
+                                labelFor: (i) => i.toString().padLeft(2, '0'),
+                                onChanged: (i) => setState(() {
+                                  final m = i % 60;
+                                  if (field == _Field.start) {
+                                    _startMin = (_startMin ~/ 60) * 60 + m;
+                                  } else {
+                                    _endMin = (_endMin ~/ 60) * 60 + m;
+                                  }
+                                }),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    },
+                  ),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    alignment: Alignment.topCenter,
+                    child: _overnight
+                        ? Padding(
+                            padding: const EdgeInsets.only(top: NdSpace.md),
+                            child: Row(
+                              children: [
+                                NdIcon(Nd.moon, color: p.sleepDot, size: 16),
+                                const SizedBox(width: NdSpace.sm),
+                                Text(
+                                  'Runs overnight, ending the next morning',
+                                  style: p.label.copyWith(color: p.sleepDot),
+                                ),
+                              ],
+                            ),
+                          )
+                        : const SizedBox(width: double.infinity),
+                  ),
+                  const SizedBox(height: NdSpace.xl),
+
+                  Text('DAYS', style: p.h2),
+                  const SizedBox(height: NdSpace.md),
+                  DayPicker(
+                    dayBits: _dayBits,
+                    onChanged: (bits) => setState(() => _dayBits = bits),
+                  ),
+                  const SizedBox(height: NdSpace.xxl),
+
+                  Row(
+                    children: [
+                      if (_editing)
+                        NdButton(
+                          label: 'Delete',
+                          danger: true,
+                          height: 46,
+                          onTap: _delete,
+                        ),
+                      const Spacer(),
+                      DialogAction(
+                        label: 'Cancel',
+                        onTap: () => Navigator.of(context).pop(),
+                      ),
+                      const SizedBox(width: NdSpace.xs),
+                      NdButton(
+                        label: 'Save',
+                        filled: true,
+                        height: 46,
+                        onTap: _packages.isEmpty ? null : _save,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -362,30 +373,26 @@ class _TimeChip extends StatelessWidget {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(
+            horizontal: NdSpace.lg,
+            vertical: NdSpace.md,
+          ),
           decoration: BoxDecoration(
-            color: open ? p.panelHi : Colors.transparent,
-            border: Border.all(
-              color: open ? p.accent : p.border,
-              width: 1.5,
-            ),
+            color: p.panelHi,
+            borderRadius: BorderRadius.circular(NdRadius.inner),
+            border: Border.all(color: open ? p.accent : p.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: p.label.copyWith(color: open ? p.accent : p.textDim),
+                style: p.micro.copyWith(color: open ? p.accent : p.textDim),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: NdSpace.xs),
               Text(
                 _RuleEditSheetState._fmt(minutes),
-                style: TextStyle(
-                  fontFamily: kFontTerminal,
-                  fontSize: 34,
-                  color: open ? p.accent : p.text,
-                  height: 1,
-                ),
+                style: p.dot(30, color: open ? p.accent : p.text),
               ),
             ],
           ),
@@ -426,9 +433,11 @@ class AppIconStack extends StatelessWidget {
                   left: i * step,
                   top: 0,
                   child: Container(
+                    clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
                       color: p.bg,
                       border: Border.all(color: p.border),
+                      borderRadius: BorderRadius.circular(size * 0.28),
                     ),
                     child: AppIconImage(packageName: pkg, size: size),
                   ),
@@ -437,15 +446,8 @@ class AppIconStack extends StatelessWidget {
           ),
         ),
         if (overflow > 0) ...[
-          const SizedBox(width: 8),
-          Text(
-            '+$overflow',
-            style: TextStyle(
-              fontFamily: kFontTerminal,
-              fontSize: size * 0.75,
-              color: p.textDim,
-            ),
-          ),
+          const SizedBox(width: NdSpace.sm),
+          Text('+$overflow', style: p.dot(size * 0.7, color: p.textDim)),
         ],
       ],
     );

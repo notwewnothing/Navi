@@ -9,9 +9,8 @@ import '../../services/schedule_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
 import '../../widgets/app_picker_sheet.dart';
-import '../../widgets/glitch.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import 'rule_edit_sheet.dart';
 
 class AppBlockScreen extends StatefulWidget {
@@ -47,20 +46,20 @@ class _AppBlockScreenState extends State<AppBlockScreen>
   }
 
   Future<bool?> _confirmDelete() {
-    return showPixelDialog<bool>(
+    return showNdDialog<bool>(
       context: context,
-      title: 'DELETE RULE',
+      title: 'Delete this rule?',
       builder: (context) => Text(
-        'Sever this rule? The blocked apps go free.',
-        style: context.palette.body,
+        'The apps it covers stop being blocked at these times.',
+        style: context.palette.bodyDim,
       ),
       actions: (context) => [
         DialogAction(
-          label: 'CANCEL',
+          label: 'Cancel',
           onTap: () => Navigator.of(context).pop(false),
         ),
         DialogAction(
-          label: 'DELETE',
+          label: 'Delete',
           danger: true,
           onTap: () => Navigator.of(context).pop(true),
         ),
@@ -89,16 +88,21 @@ class _AppBlockScreenState extends State<AppBlockScreen>
       body: SafeArea(
         child: Column(
           children: [
-            PixelHeader(
-              title: 'APP BLOCKING',
-              leading: PixelIconButton(
-                glyph: Px.left,
+            NdHeader(
+              title: 'App blocking',
+              leading: NdIconButton(
+                glyph: Nd.left,
                 onTap: () => Navigator.pop(context),
               ),
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 110),
+                padding: const EdgeInsets.fromLTRB(
+                  NdSpace.page,
+                  NdSpace.xs,
+                  NdSpace.page,
+                  110,
+                ),
                 children: [
                   _Reveal(
                     index: 0,
@@ -110,7 +114,7 @@ class _AppBlockScreenState extends State<AppBlockScreen>
                       },
                     ),
                   ),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: NdSpace.xxl),
 
                   _Reveal(
                     index: 1,
@@ -121,20 +125,23 @@ class _AppBlockScreenState extends State<AppBlockScreen>
                         if (rules.isNotEmpty)
                           Text(
                             '${rules.length}',
-                            style: p.label.copyWith(color: p.accent),
+                            style: p.micro.copyWith(color: p.accent),
                           ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: NdSpace.md),
                   if (rules.isEmpty)
-                    const _Reveal(
+                    _Reveal(
                       index: 2,
                       child: SizedBox(
-                        height: 170,
+                        height: 200,
                         child: EmptyState(
-                          message: 'No rules. The world is open.',
-                          glyph: Px.block,
+                          message:
+                              'No rules yet.\nA rule blocks chosen apps at set times.',
+                          glyph: Nd.block,
+                          actionLabel: 'Add a rule',
+                          onAction: () => showRuleEditSheet(context),
                         ),
                       ),
                     )
@@ -143,33 +150,35 @@ class _AppBlockScreenState extends State<AppBlockScreen>
                       _Reveal(
                         index: 2 + i,
                         child: Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.only(bottom: NdSpace.md),
                           child: Dismissible(
                             key: ValueKey('block-rule-${rule.id}'),
                             direction: DismissDirection.endToStart,
                             background: Container(
                               alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 20),
+                              padding: const EdgeInsets.only(right: NdSpace.xl),
                               decoration: BoxDecoration(
-                                color: p.danger.withValues(alpha: 0.12),
-                                border: Border.all(color: p.danger),
-                              ),
-                              child: PixelIcon(
-                                Px.trash,
                                 color: p.danger,
-                                size: 18,
+                                borderRadius: BorderRadius.circular(
+                                  NdRadius.card,
+                                ),
+                              ),
+                              child: const NdIcon(
+                                Nd.trash,
+                                color: Colors.white,
+                                size: 22,
                               ),
                             ),
                             confirmDismiss: (_) async =>
                                 await _confirmDelete() ?? false,
                             onDismissed: (_) {
                               HapticFeedback.mediumImpact();
-                              Sfx.glitch();
+                              Sfx.tick();
                               store.removeRule(rule);
-                              showPixelToast(
+                              showNdToast(
                                 context,
-                                'RULE DELETED',
-                                glyph: Px.trash,
+                                'Rule deleted',
+                                glyph: Nd.trash,
                               );
                             },
                             child: _RuleCard(
@@ -181,13 +190,13 @@ class _AppBlockScreenState extends State<AppBlockScreen>
                           ),
                         ),
                       ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: NdSpace.xl),
 
                   _Reveal(
                     index: 3 + rules.length,
                     child: Text('SLEEP BLOCKING', style: p.h2),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: NdSpace.md),
                   _Reveal(
                     index: 4 + rules.length,
                     child: _SleepBlockCard(
@@ -202,7 +211,8 @@ class _AppBlockScreenState extends State<AppBlockScreen>
           ],
         ),
       ),
-      floatingActionButton: PixelFab(
+      floatingActionButton: NdFab(
+        label: 'New rule',
         onTap: () => showRuleEditSheet(context),
       ),
     );
@@ -223,7 +233,7 @@ class _StatusBanner extends StatelessWidget {
       builder: (context, snapshot) {
         final ready = snapshot.connectionState == ConnectionState.done;
         final online = snapshot.data ?? false;
-        return PixelCard(
+        return NdCard(
           highlighted: ready && online,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
@@ -232,9 +242,9 @@ class _StatusBanner extends StatelessWidget {
                 ? Row(
                     key: const ValueKey('probing'),
                     children: [
-                      const BlinkingCursor(width: 8, height: 14),
-                      const SizedBox(width: 12),
-                      Text('LINKING...', style: p.label),
+                      const NdPulseDot(size: 8),
+                      const SizedBox(width: NdSpace.md),
+                      Text('Checking service...', style: p.label),
                     ],
                   )
                 : online
@@ -246,38 +256,24 @@ class _StatusBanner extends StatelessWidget {
                         height: 10,
                         decoration: BoxDecoration(
                           color: p.accent,
-                          boxShadow: [
-                            BoxShadow(
-                              color: p.accent.withValues(alpha: 0.5),
-                              blurRadius: 10,
-                            ),
-                          ],
+                          shape: BoxShape.circle,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: NdSpace.md),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Text('Blocking is active', style: p.row),
+                            const SizedBox(height: 3),
                             Text(
-                              'BLOCKER ONLINE',
-                              style: TextStyle(
-                                fontFamily: kFontPixel,
-                                fontSize: 9,
-                                letterSpacing: 1.5,
-                                color: p.accent,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              'Accessibility link active. Rules enforced.',
-                              style: p.bodyDim.copyWith(fontSize: 17),
+                              'Your rules are being enforced.',
+                              style: p.label.copyWith(fontSize: 12),
                             ),
                           ],
                         ),
                       ),
-                      PixelIcon(Px.check, color: p.accent, size: 16),
+                      NdIcon(Nd.check, color: p.accent, size: 20),
                     ],
                   )
                 : Column(
@@ -286,36 +282,30 @@ class _StatusBanner extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          BlinkingCursor(width: 10, height: 10, color: p.danger),
-                          const SizedBox(width: 12),
+                          NdPulseDot(size: 10, color: p.danger),
+                          const SizedBox(width: NdSpace.md),
                           Expanded(
                             child: Text(
-                              'BLOCKER OFFLINE',
-                              style: TextStyle(
-                                fontFamily: kFontPixel,
-                                fontSize: 9,
-                                letterSpacing: 1.5,
-                                color: p.danger,
-                                height: 1.4,
-                              ),
+                              'Blocking is off',
+                              style: p.row.copyWith(color: p.danger),
                             ),
                           ),
-                          PixelIcon(Px.x, color: p.danger, size: 14),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: NdSpace.sm),
                       Text(
-                        'The accessibility service is disconnected. '
-                        'Nothing is blocked.',
-                        style: p.bodyDim.copyWith(fontSize: 17),
+                        'NAVI needs its accessibility service enabled. Until '
+                        'then no app is blocked.',
+                        style: p.bodyDim,
                       ),
-                      const SizedBox(height: 12),
-                      PixelButton(
-                        label: 'ENABLE',
-                        glyph: Px.bolt,
+                      const SizedBox(height: NdSpace.lg),
+                      NdButton(
+                        label: 'Open accessibility settings',
+                        glyph: Nd.bolt,
                         danger: true,
+                        filled: true,
                         expand: true,
-                        height: 44,
+                        height: 46,
                         onTap: onEnable,
                       ),
                     ],
@@ -339,12 +329,12 @@ class _RuleCard extends StatelessWidget {
   final VoidCallback onToggle;
 
   static String _daySummary(int bits) {
-    const names = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
+    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return switch (bits & 0x7f) {
-      0x7f => 'EVERY DAY',
-      0x1f => 'MON—FRI',
-      0x60 => 'WEEKENDS',
-      0 => 'NO DAYS',
+      0x7f => 'Every day',
+      0x1f => 'Weekdays',
+      0x60 => 'Weekends',
+      0 => 'No days selected',
       final b => [
         for (var i = 0; i < 7; i++)
           if ((b >> i) & 1 == 1) names[i],
@@ -355,7 +345,7 @@ class _RuleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return PixelCard(
+    return NdCard(
       onTap: onTap,
       child: Row(
         children: [
@@ -368,33 +358,28 @@ class _RuleCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      AppIconStack(packages: rule.packages, size: 22),
-                      const SizedBox(width: 10),
+                      AppIconStack(packages: rule.packages, size: 24),
+                      const SizedBox(width: NdSpace.md),
                       Text(
                         '${rule.packages.length} '
-                        'APP${rule.packages.length == 1 ? '' : 'S'}',
+                        'app${rule.packages.length == 1 ? '' : 's'}',
                         style: p.label.copyWith(color: p.text),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: NdSpace.md),
                   Text(
                     rule.timeLabel,
-                    style: TextStyle(
-                      fontFamily: kFontTerminal,
-                      fontSize: 26,
-                      color: rule.enabled ? p.text : p.textDim,
-                      height: 1,
-                    ),
+                    style: p.dot(26, color: rule.enabled ? p.text : p.textDim),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: NdSpace.xs),
                   Text(_daySummary(rule.dayBits), style: p.label),
                 ],
               ),
             ),
           ),
           const SizedBox(width: 12),
-          PixelSwitch(value: rule.enabled, onChanged: (_) => onToggle()),
+          NdSwitch(value: rule.enabled, onChanged: (_) => onToggle()),
         ],
       ),
     );
@@ -416,43 +401,39 @@ class _SleepBlockCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     final enabled = store.sleepBlockEnabled;
-    return PixelCard(
+    return NdCard(
       highlighted: enabled,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              PixelIcon(
-                Px.moon,
+              NdIcon(
+                Nd.moon,
                 color: enabled ? p.sleepDot : p.textGhost,
-                size: 16,
+                size: 22,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: NdSpace.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'SLEEP BLOCKING',
-                      style: TextStyle(
-                        fontFamily: kFontPixel,
-                        fontSize: 9,
-                        letterSpacing: 1.5,
+                      'Sleep blocking',
+                      style: p.row.copyWith(
                         color: enabled ? p.text : p.textDim,
-                        height: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 3),
                     Text(
-                      'Lock apps away while you sleep.',
-                      style: p.bodyDim.copyWith(fontSize: 17),
+                      'Locks apps away during scheduled sleep.',
+                      style: p.label.copyWith(fontSize: 12),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              PixelSwitch(
+              const SizedBox(width: NdSpace.md),
+              NdSwitch(
                 value: enabled,
                 onChanged: (v) => store.setSleepBlock(enabled: v),
               ),
@@ -467,32 +448,33 @@ class _SleepBlockCard extends StatelessWidget {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 14),
-                      PixelButton(
-                        label: 'APPS (${store.sleepPackages.length})',
-                        glyph: Px.grid,
+                      const SizedBox(height: NdSpace.lg),
+                      NdButton(
+                        label: store.sleepPackages.isEmpty
+                            ? 'Choose apps'
+                            : '${store.sleepPackages.length} app'
+                                  '${store.sleepPackages.length == 1 ? '' : 's'} selected',
+                        glyph: Nd.grid,
                         expand: true,
-                        height: 44,
+                        height: 46,
                         onTap: onPickApps,
                       ),
                       if (store.sleepPackages.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        AppIconStack(packages: store.sleepPackages, size: 22),
+                        const SizedBox(height: NdSpace.md),
+                        AppIconStack(packages: store.sleepPackages, size: 24),
                       ],
-                      const SizedBox(height: 12),
+                      const SizedBox(height: NdSpace.lg),
                       if (sleepEvents.isEmpty)
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            PixelIcon(Px.x, color: p.danger, size: 11),
-                            const SizedBox(width: 8),
+                            NdIcon(Nd.x, color: p.danger, size: 15),
+                            const SizedBox(width: NdSpace.sm),
                             Expanded(
                               child: Text(
-                                'NO SLEEP BLOCKS SCHEDULED — '
-                                'ADD ONE IN SCHEDULE',
-                                style: p.label.copyWith(
-                                  color: p.danger.withValues(alpha: 0.9),
-                                ),
+                                'No sleep events scheduled yet — add one on '
+                                'the Schedule tab for this to take effect.',
+                                style: p.label.copyWith(color: p.danger),
                               ),
                             ),
                           ],
@@ -500,23 +482,21 @@ class _SleepBlockCard extends StatelessWidget {
                       else
                         for (final event in sleepEvents)
                           Padding(
-                            padding: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.only(top: NdSpace.xs),
                             child: Row(
                               children: [
                                 Container(
                                   width: 6,
                                   height: 6,
-                                  color: p.sleepDot,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'BLOCKS DURING: ${event.timeLabel}',
-                                  style: TextStyle(
-                                    fontFamily: kFontTerminal,
-                                    fontSize: 18,
-                                    color: p.textDim,
-                                    height: 1.15,
+                                  decoration: BoxDecoration(
+                                    color: p.sleepDot,
+                                    shape: BoxShape.circle,
                                   ),
+                                ),
+                                const SizedBox(width: NdSpace.md),
+                                Text(
+                                  'Blocks during ${event.timeLabel}',
+                                  style: p.label,
                                 ),
                               ],
                             ),

@@ -12,9 +12,8 @@ import '../../services/session_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
 import '../../widgets/app_picker_sheet.dart';
-import '../../widgets/glitch.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import '../../widgets/tactile.dart';
 
 typedef _AppUsage = ({String appName, String packageName, int seconds});
@@ -114,10 +113,8 @@ class _ScreenTimeScreenState extends State<ScreenTimeScreen>
   }
 
   String _dayTag(DateTime day) {
-    if (day == _week.last) return 'TODAY';
-    final mm = day.month.toString().padLeft(2, '0');
-    final dd = day.day.toString().padLeft(2, '0');
-    return '${_dayLong[day.weekday - 1]} $mm.$dd';
+    if (day == _week.last) return 'Today';
+    return '${_dayLong[day.weekday - 1]} ${day.day}';
   }
 
   @override
@@ -138,25 +135,15 @@ class _ScreenTimeScreenState extends State<ScreenTimeScreen>
       body: SafeArea(
         child: Column(
           children: [
-            PixelHeader(
-              title: 'SCREEN TIME',
-              leading: PixelIconButton(
-                glyph: Px.left,
+            NdHeader(
+              title: 'Screen time',
+              subtitle: todaySeconds > 0
+                  ? '${minutesLabel(todaySeconds ~/ 60)} today'
+                  : null,
+              leading: NdIconButton(
+                glyph: Nd.left,
                 onTap: () => Navigator.pop(context),
               ),
-              actions: [
-                if (todaySeconds > 0)
-                  Text(
-                    minutesLabel(todaySeconds ~/ 60),
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontFamily: kFontTerminal,
-                      fontSize: 24,
-                      height: 1,
-                      color: p.accent,
-                    ),
-                  ),
-              ],
             ),
             Expanded(
               child: switch ((_weekTotals, gate)) {
@@ -174,10 +161,15 @@ class _ScreenTimeScreenState extends State<ScreenTimeScreen>
   Widget _content(NaviPalette p, Set<String> blockedSet) {
     final apps = _apps;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      padding: const EdgeInsets.fromLTRB(
+        NdSpace.page,
+        NdSpace.sm,
+        NdSpace.page,
+        NdSpace.xxl,
+      ),
       children: [
         Text('LAST 7 DAYS', style: p.h2),
-        const SizedBox(height: 14),
+        const SizedBox(height: NdSpace.lg),
         _WeekChart(
           days: _week,
           totals: _weekTotals!,
@@ -185,27 +177,30 @@ class _ScreenTimeScreenState extends State<ScreenTimeScreen>
           epoch: _chartEpoch,
           onSelect: _selectDay,
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: NdSpace.xxl),
         if (apps == null)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 36),
+            padding: EdgeInsets.symmetric(vertical: NdSpace.xxl),
             child: _ScanningLabel(),
           )
         else ...[
           _distractionCard(apps, blockedSet),
-          const SizedBox(height: 28),
+          const SizedBox(height: NdSpace.xxl),
           Row(
             children: [
               Text('MOST USED', style: p.h2),
               const Spacer(),
-              Text(_dayTag(_selected), style: p.labelAccent),
+              Text(
+                _dayTag(_selected),
+                style: p.micro.copyWith(color: p.accent),
+              ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: NdSpace.lg),
           if (apps.isEmpty)
             const SizedBox(
               height: 180,
-              child: EmptyState(message: 'NO USAGE DATA'),
+              child: EmptyState(message: 'No usage recorded for this day.'),
             )
           else
             _appList(apps, blockedSet),
@@ -250,9 +245,7 @@ class _ScreenTimeScreenState extends State<ScreenTimeScreen>
 
   static double _staggered(double t, int i) {
     final start = i * 0.045;
-    return Curves.easeOutCubic.transform(
-      ((t - start) / 0.35).clamp(0.0, 1.0),
-    );
+    return Curves.easeOutCubic.transform(((t - start) / 0.35).clamp(0.0, 1.0));
   }
 }
 
@@ -323,7 +316,7 @@ class _WeekChart extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              height: 16,
+              height: 18,
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
@@ -332,44 +325,45 @@ class _WeekChart extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     minutesLabel(total ~/ 60),
-                    style: TextStyle(
-                      fontFamily: kFontTerminal,
-                      fontSize: 15,
-                      height: 1,
-                      color: p.accent,
-                    ),
+                    style: p.micro.copyWith(color: p.accent),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: NdSpace.sm),
             SizedBox(
               height: _stackHeight,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   if (lit == 0)
-                    Container(width: _blockSide, height: 2, color: p.border)
+                    Container(
+                      width: _blockSide,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: p.borderHi,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    )
                   else
                     for (var b = 0; b < lit; b++) ...[
                       if (b > 0) const SizedBox(height: _blockGap),
                       Container(
                         width: _blockSide,
                         height: _blockSide,
-                        color: color,
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ],
                 ],
               ),
             ),
-            const SizedBox(height: 9),
+            const SizedBox(height: NdSpace.md),
             Text(
               _dayShort[day.weekday - 1],
-              style: TextStyle(
-                fontFamily: kFontPixel,
-                fontSize: 7,
-                letterSpacing: 1,
-                height: 1.2,
+              style: p.micro.copyWith(
                 color: isSelected
                     ? p.accent
                     : isToday
@@ -400,49 +394,39 @@ class _DistractionCard extends StatelessWidget {
     final p = context.palette;
     final hot = pct > 40;
     final tone = hot ? p.danger : p.accent;
-    return PixelCard(
-      padding: const EdgeInsets.all(16),
+    return NdCard(
+      padding: const EdgeInsets.all(NdSpace.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              PixelIcon(Px.block, color: p.textDim, size: 12),
-              const SizedBox(width: 8),
+              NdIcon(Nd.block, color: p.textDim, size: 16),
+              const SizedBox(width: NdSpace.sm),
               Text('DISTRACTION SCORE', style: p.h2),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: NdSpace.md),
           TweenAnimationBuilder<double>(
             key: ValueKey('$epoch/$pct'),
             tween: Tween(begin: 0, end: pct.toDouble()),
             duration: const Duration(milliseconds: 800),
             curve: Curves.easeOutCubic,
-            builder: (_, v, _) => Text(
-              '${v.round()}%',
-              style: TextStyle(
-                fontFamily: kFontTerminal,
-                fontSize: 62,
-                height: 1,
-                color: tone,
-              ),
-            ),
+            builder: (_, v, _) =>
+                Text('${v.round()}%', style: p.dot(58, color: tone)),
           ),
-          const SizedBox(height: 12),
-          PixelProgressBar(value: pct / 100, height: 8, color: tone),
-          const SizedBox(height: 10),
+          const SizedBox(height: NdSpace.md),
+          NdProgressBar(value: pct / 100, height: 6, color: tone),
+          const SizedBox(height: NdSpace.md),
           Row(
             children: [
-              Text('TIME LOST TO BLOCKED APPS', style: p.label),
+              Flexible(
+                child: Text('Time spent in apps you block', style: p.label),
+              ),
               const Spacer(),
               Text(
                 minutesLabel(blockedSeconds ~/ 60),
-                style: TextStyle(
-                  fontFamily: kFontTerminal,
-                  fontSize: 16,
-                  height: 1,
-                  color: p.textDim,
-                ),
+                style: p.label.copyWith(color: p.text),
               ),
             ],
           ),
@@ -470,60 +454,43 @@ class _AppUsageRow extends StatelessWidget {
     final p = context.palette;
     final h = app.seconds ~/ 3600;
     final m = (app.seconds % 3600) ~/ 60;
-    final label = '${h}H ${m.toString().padLeft(2, '0')}M';
+    final label = h > 0 ? '${h}h ${m}m' : '${m}m';
     return Opacity(
       opacity: reveal,
       child: Transform.translate(
         offset: Offset(0, 12 * (1 - reveal)),
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 15),
+          padding: const EdgeInsets.only(bottom: NdSpace.lg),
           child: Column(
             children: [
               Row(
                 children: [
-                  AppIconImage(packageName: app.packageName, size: 26),
-                  const SizedBox(width: 12),
+                  AppIconImage(packageName: app.packageName, size: 32),
+                  const SizedBox(width: NdSpace.md),
                   Expanded(
                     child: Text(
-                      app.appName.toUpperCase(),
+                      app.appName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: kFontTerminal,
-                        fontSize: 21,
-                        height: 1.05,
-                        color: p.text,
-                      ),
+                      style: p.row,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: NdSpace.md),
                   if (isBlocked) ...[
-                    PixelIcon(
-                      Px.block,
-                      color: p.danger.withValues(alpha: 0.7),
-                      size: 11,
-                    ),
-                    const SizedBox(width: 7),
+                    NdIcon(Nd.block, color: p.danger, size: 14),
+                    const SizedBox(width: NdSpace.sm),
                   ],
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontFamily: kFontTerminal,
-                      fontSize: 20,
-                      height: 1.05,
-                      color: p.accent,
-                    ),
-                  ),
+                  Text(label, style: p.dot(18, color: p.text)),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: NdSpace.sm),
               Padding(
-                padding: const EdgeInsets.only(left: 38),
-                child: PixelProgressBar(
+                padding: const EdgeInsets.only(left: 44),
+                child: NdProgressBar(
                   value: fraction.clamp(0.0, 1.0),
-                  height: 5,
+                  height: 4,
                   segments: 30,
-                  color: p.accentDim,
+                  color: p.accentMid,
                 ),
               ),
             ],
@@ -543,23 +510,30 @@ class _PermissionGate extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: PixelCard(
-          padding: const EdgeInsets.fromLTRB(20, 26, 20, 22),
+        padding: const EdgeInsets.symmetric(horizontal: NdSpace.xl),
+        child: NdCard(
+          padding: const EdgeInsets.fromLTRB(
+            NdSpace.xl,
+            NdSpace.xl,
+            NdSpace.xl,
+            NdSpace.xl,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(
-                height: 130,
+                height: 190,
                 child: EmptyState(
-                  message: 'THE WIRED CANNOT SEE YOUR DEVICE',
-                  glyph: Px.eye,
+                  message:
+                      'NAVI needs usage access to show your screen time.\n'
+                      'Nothing leaves your device.',
+                  glyph: Nd.eye,
                 ),
               ),
-              const SizedBox(height: 20),
-              PixelButton(
-                label: 'GRANT USAGE ACCESS',
+              const SizedBox(height: NdSpace.lg),
+              NdButton(
+                label: 'Grant usage access',
                 filled: true,
                 expand: true,
                 onTap: onGrant,
@@ -580,21 +554,13 @@ class _ScanningLabel extends StatelessWidget {
     final p = context.palette;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        padding: const EdgeInsets.symmetric(vertical: NdSpace.xl),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'SCANNING THE WIRED...',
-              style: TextStyle(
-                fontFamily: kFontTerminal,
-                fontSize: 19,
-                height: 1,
-                color: p.textDim,
-              ),
-            ),
-            const SizedBox(width: 8),
-            BlinkingCursor(width: 9, height: 16, color: p.accentDim),
+            Text('Reading usage data...', style: p.bodyDim),
+            const SizedBox(width: NdSpace.md),
+            NdPulseDot(size: 8, color: p.accent),
           ],
         ),
       ),

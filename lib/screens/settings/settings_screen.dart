@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import '../../services/app_blocker.dart';
 import '../../services/block_store.dart';
 import '../../services/device_admin_service.dart';
-import '../../services/easter_eggs.dart';
 import '../../services/habit_store.dart';
 import '../../services/journal_store.dart';
 import '../../services/schedule_store.dart';
@@ -12,15 +11,18 @@ import '../../services/session_store.dart';
 import '../../services/settings_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import '../../widgets/routes.dart';
 import '../../widgets/tactile.dart';
 import '../blocker/app_block_screen.dart';
-import '../shell.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.onManageHabits});
+
+  /// Invoked after this screen pops itself. Supplied by whoever pushed it,
+  /// since that context still sits below the shell and can switch tabs.
+  final VoidCallback? onManageHabits;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -30,10 +32,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     with WidgetsBindingObserver {
   bool _accessibilityOn = false;
   bool _adminOn = false;
-
-  int _versionTaps = 0;
-  DateTime _versionFirstTap = DateTime.fromMillisecondsSinceEpoch(0);
-  DateTime _versionLastTap = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
@@ -63,19 +61,18 @@ class _SettingsScreenState extends State<SettingsScreen>
     });
   }
 
-
   Future<void> _pickAvatar() async {
     final settings = SettingsScope.of(context);
-    final glyphs = Px.habitIcons.values.toList();
-    await showPixelDialog<void>(
+    final glyphs = Nd.habitIcons.values.toList();
+    await showNdDialog<void>(
       context: context,
-      title: 'SELECT AVATAR',
+      title: 'Pick an avatar',
       builder: (context) {
         final p = context.palette;
         final selected = settings.avatarIndex;
         return Wrap(
-          spacing: 10,
-          runSpacing: 10,
+          spacing: NdSpace.md,
+          runSpacing: NdSpace.md,
           children: [
             for (final (i, glyph) in glyphs.indexed)
               Tactile(
@@ -88,19 +85,19 @@ class _SettingsScreenState extends State<SettingsScreen>
                     Navigator.pop(context);
                   },
                   child: Container(
-                    width: 52,
-                    height: 52,
+                    width: 54,
+                    height: 54,
                     decoration: BoxDecoration(
-                      color: i == selected ? p.accentGhost : p.panelHi,
+                      shape: BoxShape.circle,
+                      color: i == selected ? p.accent : p.panelHi,
                       border: Border.all(
                         color: i == selected ? p.accent : p.border,
-                        width: i == selected ? 1.5 : 1,
                       ),
                     ),
                     child: Center(
-                      child: PixelIcon(
+                      child: NdIcon(
                         glyph,
-                        color: i == selected ? p.accent : p.textDim,
+                        color: i == selected ? p.onAccent : p.textDim,
                         size: 26,
                       ),
                     ),
@@ -116,20 +113,20 @@ class _SettingsScreenState extends State<SettingsScreen>
   Future<void> _editDisplayName() async {
     final settings = SettingsScope.of(context);
     final controller = TextEditingController(text: settings.displayName);
-    await showPixelDialog<void>(
+    await showNdDialog<void>(
       context: context,
-      title: 'IDENTITY',
-      builder: (context) => PixelTextField(
+      title: 'Your name',
+      builder: (context) => NdTextField(
         controller: controller,
-        hint: 'LAIN',
+        hint: 'How should NAVI greet you?',
         autofocus: true,
-        fontSize: 24,
-        capitalization: TextCapitalization.characters,
+        fontSize: 18,
+        capitalization: TextCapitalization.words,
       ),
       actions: (context) => [
-        DialogAction(label: 'CANCEL', onTap: () => Navigator.pop(context)),
+        DialogAction(label: 'Cancel', onTap: () => Navigator.pop(context)),
         DialogAction(
-          label: 'SAVE',
+          label: 'Save',
           emphasized: true,
           onTap: () {
             Sfx.tick();
@@ -142,42 +139,33 @@ class _SettingsScreenState extends State<SettingsScreen>
     controller.dispose();
   }
 
-
   Future<void> _editDefaultReminder() async {
     final settings = SettingsScope.of(context);
     var hour = settings.defaultReminderMinutes ~/ 60;
     var minute = settings.defaultReminderMinutes % 60;
     final hourCtrl = FixedExtentScrollController(initialItem: hour);
     final minuteCtrl = FixedExtentScrollController(initialItem: minute);
-    await showPixelDialog<void>(
+    await showNdDialog<void>(
       context: context,
-      title: 'DEFAULT REMINDER',
+      title: 'Default reminder time',
       builder: (context) {
         final p = context.palette;
         return SizedBox(
-          height: 170,
+          height: 180,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              PixelWheel(
+              NdWheel(
                 itemCount: 24,
                 controller: hourCtrl,
                 labelFor: (i) => i.toString().padLeft(2, '0'),
                 onChanged: (i) => hour = ((i % 24) + 24) % 24,
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  ':',
-                  style: TextStyle(
-                    fontFamily: kFontTerminal,
-                    fontSize: 44,
-                    color: p.textDim,
-                    height: 1,
-                  ),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: NdSpace.xs),
+                child: Text(':', style: p.dot(40, color: p.textGhost)),
               ),
-              PixelWheel(
+              NdWheel(
                 itemCount: 60,
                 controller: minuteCtrl,
                 labelFor: (i) => i.toString().padLeft(2, '0'),
@@ -188,9 +176,9 @@ class _SettingsScreenState extends State<SettingsScreen>
         );
       },
       actions: (context) => [
-        DialogAction(label: 'CANCEL', onTap: () => Navigator.pop(context)),
+        DialogAction(label: 'Cancel', onTap: () => Navigator.pop(context)),
         DialogAction(
-          label: 'SET',
+          label: 'Set',
           emphasized: true,
           onTap: () {
             Sfx.tick();
@@ -203,7 +191,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     hourCtrl.dispose();
     minuteCtrl.dispose();
   }
-
 
   Future<void> _exportData() async {
     final settings = SettingsScope.of(context);
@@ -221,32 +208,31 @@ class _SettingsScreenState extends State<SettingsScreen>
       if (!mounted) return;
       Sfx.complete();
       final short = path.split('/').last;
-      showPixelToast(context, 'EXPORTED TO $short', glyph: Px.export);
+      showNdToast(context, 'Exported to $short', glyph: Nd.export);
     } catch (_) {
       if (!mounted) return;
-      showPixelToast(context, 'EXPORT FAILED', glyph: Px.x);
+      showNdToast(context, 'Export failed', glyph: Nd.x);
     }
   }
 
-
   Future<void> _toggleDeviceAdmin() async {
     final active = _adminOn;
-    await showPixelDialog<void>(
+    await showNdDialog<void>(
       context: context,
-      title: 'DEVICE ADMIN',
+      title: active ? 'Remove device admin?' : 'Grant device admin?',
       builder: (context) => Text(
         active
-            ? 'Remove uninstall protection? Strict blocking becomes '
-                  'escapable by deleting NAVI.'
-            : 'Grant device admin so NAVI cannot be uninstalled to bypass '
-                  'strict blocking.',
+            ? 'Strict blocking becomes escapable — anyone could uninstall '
+                  'NAVI to get around it.'
+            : 'This stops NAVI from being uninstalled to bypass strict '
+                  'blocking. You can revoke it here at any time.',
         style: context.palette.bodyDim,
       ),
       actions: (context) => [
-        DialogAction(label: 'CANCEL', onTap: () => Navigator.pop(context)),
+        DialogAction(label: 'Cancel', onTap: () => Navigator.pop(context)),
         if (active)
           DialogAction(
-            label: 'REMOVE',
+            label: 'Remove',
             danger: true,
             onTap: () async {
               Navigator.pop(context);
@@ -256,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           )
         else
           DialogAction(
-            label: 'GRANT',
+            label: 'Grant',
             emphasized: true,
             onTap: () async {
               Navigator.pop(context);
@@ -268,33 +254,13 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-
-  void _onVersionTap() {
-    final now = DateTime.now();
-    if (now.difference(_versionLastTap) > const Duration(milliseconds: 1200)) {
-      _versionTaps = 0;
-    }
-    if (_versionTaps == 0) _versionFirstTap = now;
-    _versionLastTap = now;
-    _versionTaps++;
-    if (_versionTaps < 7) return;
-    _versionTaps = 0;
-    if (now.difference(_versionFirstTap) > const Duration(seconds: 4)) return;
-    HapticFeedback.heavyImpact();
-    SettingsScope.of(context).unlockScanlines();
-    EasterEggs.wiredBoot(context);
-    showPixelToast(context, 'CRT MODE UNLOCKED', glyph: Px.star);
-  }
-
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final settings = SettingsScope.of(context);
     final habits = HabitScope.of(context);
-    final shell = context.findAncestorStateOfType<NaviShellState>();
 
-    final avatarGlyphs = Px.habitIcons.values.toList();
+    final avatarGlyphs = Nd.habitIcons.values.toList();
     final avatarGlyph =
         avatarGlyphs[settings.avatarIndex.clamp(0, avatarGlyphs.length - 1)];
     final reminder = settings.defaultReminderMinutes;
@@ -303,53 +269,56 @@ class _SettingsScreenState extends State<SettingsScreen>
         '${(reminder % 60).toString().padLeft(2, '0')}';
 
     final sections = <Widget>[
-      Padding(
-        padding: const EdgeInsets.only(bottom: 20),
-        child: Text(
-          'Logged into the Wired as ${settings.displayName}',
-          style: p.quote,
-        ),
-      ),
-      _Section(
-        title: 'PROFILE',
-        children: [
-          _AvatarRow(glyph: avatarGlyph, onTap: _pickAvatar),
-          _SettingsRow(
-            glyph: Px.user,
-            label: 'DISPLAY NAME',
-            value: settings.displayName,
-            onTap: _editDisplayName,
-          ),
-        ],
+      _ProfileCard(
+        glyph: avatarGlyph,
+        name: settings.displayName,
+        onAvatarTap: _pickAvatar,
+        onNameTap: _editDisplayName,
       ),
       _Section(
         title: 'HABITS',
         children: [
           _SettingsRow(
-            glyph: Px.grid,
-            label: 'MANAGE HABITS',
+            glyph: Nd.grid,
+            label: 'Manage habits',
             chevron: true,
-            onTap: () => shell?.goTo(1),
+            onTap: () {
+              Navigator.pop(context);
+              widget.onManageHabits?.call();
+            },
           ),
           _SettingsRow(
-            glyph: Px.bell,
-            label: 'DEFAULT REMINDER',
+            glyph: Nd.bell,
+            label: 'Default reminder',
+            subtitle: 'Prefilled when you create a habit',
             value: reminderLabel,
             onTap: _editDefaultReminder,
           ),
           _ChipRow(
-            glyph: Px.camera,
-            label: 'PHOTO QUALITY',
+            glyph: Nd.camera,
+            label: 'Photo quality',
             options: [
-              ('LOW', settings.photoQuality == 0, () {
-                settings.setPhotoQuality(0);
-              }),
-              ('MED', settings.photoQuality == 1, () {
-                settings.setPhotoQuality(1);
-              }),
-              ('HIGH', settings.photoQuality == 2, () {
-                settings.setPhotoQuality(2);
-              }),
+              (
+                'Low',
+                settings.photoQuality == 0,
+                () {
+                  settings.setPhotoQuality(0);
+                },
+              ),
+              (
+                'Med',
+                settings.photoQuality == 1,
+                () {
+                  settings.setPhotoQuality(1);
+                },
+              ),
+              (
+                'High',
+                settings.photoQuality == 2,
+                () {
+                  settings.setPhotoQuality(2);
+                },
+              ),
             ],
           ),
         ],
@@ -358,57 +327,58 @@ class _SettingsScreenState extends State<SettingsScreen>
         title: 'JOURNAL',
         children: [
           _ChipRow(
-            glyph: Px.pen,
-            label: 'AUTO-SAVE',
+            glyph: Nd.pen,
+            label: 'Auto-save',
             options: [
               for (final s in const [3, 5, 10])
-                ('${s}S', settings.autoSaveSeconds == s, () {
-                  settings.setAutoSaveSeconds(s);
-                }),
+                (
+                  '${s}s',
+                  settings.autoSaveSeconds == s,
+                  () {
+                    settings.setAutoSaveSeconds(s);
+                  },
+                ),
             ],
           ),
           _SettingsRow(
-            glyph: Px.export,
-            label: 'EXPORT DATA (JSON)',
+            glyph: Nd.export,
+            label: 'Export data',
+            subtitle: 'Writes a JSON file to app storage',
             chevron: true,
             onTap: _exportData,
           ),
         ],
       ),
       _Section(
-        title: 'NOTIFICATIONS',
+        title: 'NOTIFICATIONS & SOUND',
         children: [
           _SettingsRow(
-            glyph: Px.bell,
-            label: 'HABIT REMINDERS',
-            trailing: PixelSwitch(
+            glyph: Nd.bell,
+            label: 'Habit reminders',
+            trailing: NdSwitch(
               value: habits.remindersEnabled,
               onChanged: habits.setRemindersEnabled,
             ),
-            onTap: () =>
-                habits.setRemindersEnabled(!habits.remindersEnabled),
-          ),
-          _SettingsRow(
-            glyph: Px.alarm,
-            label: 'ALARM SOUND',
-            value: 'BLAST',
-            onTap: () =>
-                showPixelToast(context, 'ONLY ONE SOUND IN THE WIRED'),
+            onTap: () => habits.setRemindersEnabled(!habits.remindersEnabled),
           ),
           _ChipRow(
-            glyph: Px.hourglass,
-            label: 'SNOOZE DURATION',
+            glyph: Nd.hourglass,
+            label: 'Snooze length',
             options: [
               for (final m in const [5, 10, 15])
-                ('${m}M', settings.defaultSnoozeMinutes == m, () {
-                  settings.setDefaultSnoozeMinutes(m);
-                }),
+                (
+                  '${m}m',
+                  settings.defaultSnoozeMinutes == m,
+                  () {
+                    settings.setDefaultSnoozeMinutes(m);
+                  },
+                ),
             ],
           ),
           _SettingsRow(
-            glyph: Px.note,
-            label: 'SOUND FX',
-            trailing: PixelSwitch(
+            glyph: Nd.note,
+            label: 'Interface sounds',
+            trailing: NdSwitch(
               value: settings.sfxEnabled,
               onChanged: settings.setSfxEnabled,
             ),
@@ -420,87 +390,76 @@ class _SettingsScreenState extends State<SettingsScreen>
         title: 'APP BLOCKING',
         children: [
           _SettingsRow(
-            glyph: Px.eye,
-            label: 'ACCESSIBILITY SERVICE',
-            value: _accessibilityOn ? 'ONLINE' : 'OFFLINE',
+            glyph: Nd.eye,
+            label: 'Accessibility service',
+            subtitle: 'Required to detect and block apps',
+            value: _accessibilityOn ? 'On' : 'Off',
             valueColor: _accessibilityOn ? p.accent : p.danger,
             onTap: AppBlocker.openAccessibilitySettings,
           ),
           _SettingsRow(
-            glyph: Px.lock,
-            label: 'DEVICE ADMIN',
-            value: _adminOn ? 'ACTIVE' : 'INACTIVE',
+            glyph: Nd.lock,
+            label: 'Device admin',
+            subtitle: 'Stops NAVI being uninstalled mid-block',
+            value: _adminOn ? 'Active' : 'Inactive',
             valueColor: _adminOn ? p.accent : p.textDim,
             onTap: _toggleDeviceAdmin,
           ),
           _SettingsRow(
-            glyph: Px.block,
-            label: 'BLOCK RULES',
+            glyph: Nd.block,
+            label: 'Block rules',
             chevron: true,
-            onTap: () => Navigator.of(context).push(
-              slideUpRoute(const AppBlockScreen()),
-            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(slideUpRoute(const AppBlockScreen())),
           ),
         ],
       ),
       _Section(
-        title: 'THEME',
+        title: 'APPEARANCE',
         children: [
           _AccentRow(
             selected: settings.accentIndex,
             onSelect: settings.setAccentIndex,
           ),
           _SettingsRow(
-            glyph: Px.moon,
-            label: 'AMOLED BLACK',
-            trailing: PixelSwitch(
+            glyph: Nd.moon,
+            label: 'Pure black',
+            subtitle: 'Flattens every surface for OLED screens',
+            trailing: NdSwitch(
               value: settings.amoled,
               onChanged: settings.setAmoled,
             ),
             onTap: () => settings.setAmoled(!settings.amoled),
           ),
           _ChipRow(
-            glyph: Px.textLines,
-            label: 'FONT SIZE',
+            glyph: Nd.textLines,
+            label: 'Text size',
             options: [
               for (final (label, scale) in const [
-                ('SMALL', 0.9),
-                ('STD', 1.0),
-                ('LARGE', 1.15),
+                ('Small', 0.9),
+                ('Default', 1.0),
+                ('Large', 1.15),
               ])
-                (label, (settings.fontScale - scale).abs() < 0.01, () {
-                  settings.setFontScale(scale);
-                }),
+                (
+                  label,
+                  (settings.fontScale - scale).abs() < 0.01,
+                  () {
+                    settings.setFontScale(scale);
+                  },
+                ),
             ],
           ),
-          if (settings.scanlinesUnlocked)
-            _SettingsRow(
-              glyph: Px.video,
-              label: 'CRT SCANLINES',
-              trailing: PixelSwitch(
-                value: settings.scanlinesEnabled,
-                onChanged: settings.setScanlinesEnabled,
-              ),
-              onTap: () =>
-                  settings.setScanlinesEnabled(!settings.scanlinesEnabled),
-            ),
         ],
       ),
       _Section(
         title: 'ABOUT',
-        footer: Padding(
-          padding: const EdgeInsets.only(top: 12, left: 2),
-          child: Text(
-            'Present day. Present time. And you are still here.',
-            style: p.quote.copyWith(fontSize: 17),
-          ),
-        ),
         children: [
           _SettingsRow(
-            glyph: Px.dot,
-            label: 'NAVI v1.0',
-            value: "Let's all love Lain.",
-            onTap: _onVersionTap,
+            glyph: Nd.dot,
+            label: 'NAVI',
+            subtitle: 'Everything stays on this device',
+            value: 'v1.0',
           ),
         ],
       ),
@@ -511,10 +470,21 @@ class _SettingsScreenState extends State<SettingsScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const PixelHeader(title: 'SYSTEM'),
+            NdHeader(
+              title: 'Settings',
+              leading: NdIconButton(
+                glyph: Nd.left,
+                onTap: () => Navigator.pop(context),
+              ),
+            ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+                padding: const EdgeInsets.fromLTRB(
+                  NdSpace.page,
+                  NdSpace.xs,
+                  NdSpace.page,
+                  NdSpace.xxl,
+                ),
                 children: [
                   for (final (i, section) in sections.indexed)
                     _Reveal(index: i, child: section),
@@ -536,7 +506,7 @@ class _Reveal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final delayMs = 80 * index;
+    final delayMs = 70 * index;
     final totalMs = 300 + delayMs;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
@@ -544,61 +514,136 @@ class _Reveal extends StatelessWidget {
       curve: Interval(delayMs / totalMs, 1, curve: Curves.easeOutCubic),
       builder: (context, t, child) => Opacity(
         opacity: t,
-        child: Transform.translate(offset: Offset(0, 14 * (1 - t)), child: child),
+        child: Transform.translate(
+          offset: Offset(0, 14 * (1 - t)),
+          child: child,
+        ),
       ),
       child: child,
     );
   }
 }
 
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.children, this.footer});
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({
+    required this.glyph,
+    required this.name,
+    required this.onAvatarTap,
+    required this.onNameTap,
+  });
 
-  final String title;
-  final List<Widget> children;
-  final Widget? footer;
+  final NdGlyph glyph;
+  final String name;
+  final VoidCallback onAvatarTap;
+  final VoidCallback onNameTap;
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 22),
+      padding: const EdgeInsets.only(bottom: NdSpace.xl),
+      child: NdCard(
+        onTap: onNameTap,
+        padding: const EdgeInsets.all(NdSpace.lg),
+        child: Row(
+          children: [
+            Tactile(
+              pressedScale: 0.9,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  Sfx.tick();
+                  onAvatarTap();
+                },
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: p.panelHi,
+                    border: Border.all(color: p.borderHi),
+                  ),
+                  child: Center(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      transitionBuilder: (child, animation) =>
+                          ScaleTransition(scale: animation, child: child),
+                      child: NdIcon(
+                        glyph,
+                        key: ValueKey(glyph),
+                        color: p.accent,
+                        size: 28,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: NdSpace.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: p.title.copyWith(fontSize: 19)),
+                  const SizedBox(height: 2),
+                  Text('Tap to change name or avatar', style: p.label),
+                ],
+              ),
+            ),
+            NdIcon(Nd.right, color: p.textGhost, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: NdSpace.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: p.h2),
-          const SizedBox(height: 10),
-          PixelCard(
+          Padding(
+            padding: const EdgeInsets.only(left: NdSpace.xs),
+            child: Text(title, style: p.h2),
+          ),
+          const SizedBox(height: NdSpace.md),
+          NdCard(
             padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final (i, row) in children.indexed) ...[
-                  if (i > 0) Container(height: 1, color: p.border),
+                  if (i > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 58),
+                      child: Container(height: 1, color: p.border),
+                    ),
                   row,
                 ],
               ],
             ),
           ),
-          ?footer,
         ],
       ),
     );
   }
 }
 
-TextStyle _rowLabelStyle(NaviPalette p) => TextStyle(
-  fontFamily: kFontPixel,
-  fontSize: 8,
-  letterSpacing: 1,
-  color: p.text,
-  height: 1.5,
-);
-
 class _SettingsRow extends StatelessWidget {
   const _SettingsRow({
     required this.glyph,
     required this.label,
+    this.subtitle,
     this.value,
     this.valueColor,
     this.trailing,
@@ -606,8 +651,9 @@ class _SettingsRow extends StatelessWidget {
     this.onTap,
   });
 
-  final PixelGlyph glyph;
+  final NdGlyph glyph;
   final String label;
+  final String? subtitle;
   final String? value;
   final Color? valueColor;
   final Widget? trailing;
@@ -618,42 +664,52 @@ class _SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     final row = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: NdSpace.lg,
+        vertical: NdSpace.md,
+      ),
       child: Row(
         children: [
-          PixelIcon(glyph, color: p.textDim, size: 16),
-          const SizedBox(width: 14),
+          SizedBox(width: 26, child: NdIcon(glyph, color: p.textDim, size: 20)),
+          const SizedBox(width: NdSpace.lg),
           Expanded(
-            child: Text(
-              label,
-              style: _rowLabelStyle(p),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label, style: p.row, overflow: TextOverflow.ellipsis),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(subtitle!, style: p.label.copyWith(fontSize: 11)),
+                ],
+              ],
             ),
           ),
           if (value != null) ...[
-            const SizedBox(width: 10),
+            const SizedBox(width: NdSpace.md),
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
-              style: TextStyle(
-                fontFamily: kFontTerminal,
-                fontSize: 18,
+              style: p.label.copyWith(
                 color: valueColor ?? p.textDim,
-                height: 1.1,
+                fontSize: 14,
               ),
               child: Text(value!),
             ),
           ],
-          if (trailing != null) ...[const SizedBox(width: 10), trailing!],
+          if (trailing != null) ...[
+            const SizedBox(width: NdSpace.md),
+            trailing!,
+          ],
           if (chevron) ...[
-            const SizedBox(width: 10),
-            PixelIcon(Px.right, color: p.textGhost, size: 12),
+            const SizedBox(width: NdSpace.sm),
+            NdIcon(Nd.right, color: p.textGhost, size: 20),
           ],
         ],
       ),
     );
     if (onTap == null) return row;
     return Tactile(
-      pressedScale: 0.98,
+      pressedScale: 0.99,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
@@ -667,6 +723,7 @@ class _SettingsRow extends StatelessWidget {
   }
 }
 
+/// Label with its options underneath, so long chip sets never crowd the label.
 class _ChipRow extends StatelessWidget {
   const _ChipRow({
     required this.glyph,
@@ -674,7 +731,7 @@ class _ChipRow extends StatelessWidget {
     required this.options,
   });
 
-  final PixelGlyph glyph;
+  final NdGlyph glyph;
   final String label;
   final List<(String, bool, VoidCallback)> options;
 
@@ -682,96 +739,48 @@ class _ChipRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          PixelIcon(glyph, color: p.textDim, size: 16),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              label,
-              style: _rowLabelStyle(p),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 10),
-          for (final (i, (chipLabel, selected, onTap)) in options.indexed) ...[
-            if (i > 0) const SizedBox(width: 6),
-            PixelChip(
-              label: chipLabel,
-              compact: true,
-              selected: selected,
-              onTap: onTap,
-            ),
-          ],
-        ],
+      padding: const EdgeInsets.symmetric(
+        horizontal: NdSpace.lg,
+        vertical: NdSpace.md,
       ),
-    );
-  }
-}
-
-class _AvatarRow extends StatelessWidget {
-  const _AvatarRow({required this.glyph, required this.onTap});
-
-  final PixelGlyph glyph;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    return Tactile(
-      pressedScale: 0.98,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          Sfx.tick();
-          onTap();
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: p.panelHi,
-                  border: Border.all(color: p.accentDim, width: 1.5),
-                ),
-                child: Center(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    transitionBuilder: (child, animation) =>
-                        ScaleTransition(scale: animation, child: child),
-                    child: PixelIcon(
-                      glyph,
-                      key: ValueKey(glyph),
-                      color: p.accent,
-                      size: 30,
-                    ),
-                  ),
-                ),
+              SizedBox(
+                width: 26,
+                child: NdIcon(glyph, color: p.textDim, size: 20),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: NdSpace.lg),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('AVATAR', style: _rowLabelStyle(p)),
-                    const SizedBox(height: 5),
-                    Text(
-                      'your face in the Wired',
-                      style: p.bodyDim.copyWith(fontSize: 17),
-                    ),
-                  ],
+                child: Text(
+                  label,
+                  style: p.row,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              PixelIcon(Px.right, color: p.textGhost, size: 12),
             ],
           ),
-        ),
+          const SizedBox(height: NdSpace.md),
+          Padding(
+            padding: const EdgeInsets.only(left: 42),
+            child: Row(
+              children: [
+                for (final (i, (chipLabel, selected, onTap))
+                    in options.indexed) ...[
+                  if (i > 0) const SizedBox(width: NdSpace.sm),
+                  NdChip(
+                    label: chipLabel,
+                    compact: true,
+                    selected: selected,
+                    onTap: onTap,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -787,69 +796,72 @@ class _AccentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: NdSpace.lg,
+        vertical: NdSpace.md,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              PixelIcon(Px.star, color: p.textDim, size: 16),
-              const SizedBox(width: 14),
-              Expanded(child: Text('ACCENT', style: _rowLabelStyle(p))),
-              const SizedBox(width: 10),
+              SizedBox(
+                width: 26,
+                child: NdIcon(Nd.star, color: p.textDim, size: 20),
+              ),
+              const SizedBox(width: NdSpace.lg),
+              Expanded(child: Text('Accent', style: p.row)),
+              const SizedBox(width: NdSpace.sm),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: Text(
                   accents[selected.clamp(0, accents.length - 1)].name,
                   key: ValueKey(selected),
-                  style: TextStyle(
-                    fontFamily: kFontTerminal,
-                    fontSize: 17,
-                    color: p.accent,
-                    height: 1.1,
-                  ),
+                  style: p.micro.copyWith(color: p.accent),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              for (final (i, accent) in accents.indexed) ...[
-                if (i > 0) const SizedBox(width: 10),
-                Tactile(
-                  pressedScale: 0.86,
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      Sfx.tick();
-                      onSelect(i);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                      width: 26,
-                      height: 26,
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: i == selected
-                              ? Colors.white
-                              : p.border,
-                          width: i == selected ? 1.5 : 1,
+          const SizedBox(height: NdSpace.lg),
+          Padding(
+            padding: const EdgeInsets.only(left: 42),
+            child: Row(
+              children: [
+                for (final (i, accent) in accents.indexed) ...[
+                  if (i > 0) const SizedBox(width: NdSpace.md),
+                  Tactile(
+                    pressedScale: 0.86,
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        Sfx.tick();
+                        onSelect(i);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOut,
+                        width: 32,
+                        height: 32,
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: i == selected ? p.text : p.border,
+                            width: i == selected ? 2 : 1,
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(child: ColoredBox(color: accent.l4)),
-                          Expanded(child: ColoredBox(color: accent.l2)),
-                        ],
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: accent.l4,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ],
       ),
