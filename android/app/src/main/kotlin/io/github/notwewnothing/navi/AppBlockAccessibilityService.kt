@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.view.Gravity
 import android.view.View
@@ -60,11 +61,11 @@ class AppBlockAccessibilityService : AccessibilityService(), SharedPreferences.O
             return
         }
         if (sessionBlocks(packageName)) {
-            showOverlay(packageName, appLabel(packageName), "RETURN TO YOUR FOCUS SESSION")
+            showOverlay(packageName, appLabel(packageName), "You are in a focus session.")
             return
         }
         if (ruleBlocks(packageName)) {
-            showOverlay(packageName, appLabel(packageName), "CLOSE THE WORLD. OPEN THE NEXT.")
+            showOverlay(packageName, appLabel(packageName), "A block rule is active right now.")
             return
         }
         removeOverlay()
@@ -131,38 +132,66 @@ class AppBlockAccessibilityService : AccessibilityService(), SharedPreferences.O
         runCatching { windowManager.removeView(view) }
     }
 
+    // Mirrors the in-app Nothing styling: black ground, white type, one red pill.
     private fun blockedView(label: String, subtitle: String): View {
-        val green = Color.rgb(57, 211, 83)
-        val dim = Color.rgb(0, 109, 50)
+        val white = Color.WHITE
+        val dim = Color.rgb(160, 160, 160)
+        val red = Color.rgb(215, 25, 33)
+        // falls back to the platform sans if the bundled face cannot be loaded
+        val dotFace = runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                resources.getFont(R.font.ndot)
+            } else {
+                null
+            }
+        }.getOrNull() ?: Typeface.create("sans-serif", Typeface.NORMAL)
+        val uiFace = Typeface.create("sans-serif", Typeface.NORMAL)
+
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding(48, 48, 48, 48)
+            setPadding(64, 64, 64, 64)
             setBackgroundColor(Color.BLACK)
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT,
             )
             addView(TextView(context).apply {
-                text = "$label IS BLOCKED"
-                textSize = 28f
-                setTextColor(green)
+                text = "BLOCKED"
+                textSize = 34f
+                letterSpacing = 0.18f
+                setTextColor(white)
                 gravity = Gravity.CENTER
-                typeface = Typeface.MONOSPACE
+                typeface = dotFace
+            })
+            addView(TextView(context).apply {
+                text = label
+                textSize = 17f
+                setTextColor(dim)
+                gravity = Gravity.CENTER
+                typeface = uiFace
+                setPadding(0, 20, 0, 8)
             })
             addView(TextView(context).apply {
                 text = subtitle
-                textSize = 15f
+                textSize = 14f
                 setTextColor(dim)
                 gravity = Gravity.CENTER
-                typeface = Typeface.MONOSPACE
-                setPadding(0, 24, 0, 36)
+                typeface = uiFace
+                setPadding(0, 0, 0, 48)
             })
             addView(Button(context).apply {
-                text = "GO HOME"
-                setTextColor(Color.BLACK)
-                setBackgroundColor(green)
-                typeface = Typeface.MONOSPACE
+                text = "Go home"
+                textSize = 15f
+                isAllCaps = false
+                setTextColor(Color.WHITE)
+                typeface = uiFace
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = 999f
+                    setColor(red)
+                }
+                setPadding(72, 32, 72, 32)
                 setOnClickListener {
                     performGlobalAction(GLOBAL_ACTION_HOME)
                     removeOverlay()

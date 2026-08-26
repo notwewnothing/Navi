@@ -10,8 +10,8 @@ import '../../services/session_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
 import '../../widgets/app_picker_sheet.dart';
-import '../../widgets/pixel_icons.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 import '../../widgets/routes.dart';
 import '../../widgets/tactile.dart';
 import '../alarm/alarm_ring_screen.dart';
@@ -33,8 +33,7 @@ class TimerScreen extends StatefulWidget {
   State<TimerScreen> createState() => _TimerScreenState();
 }
 
-class _TimerScreenState extends State<TimerScreen>
-    with WidgetsBindingObserver {
+class _TimerScreenState extends State<TimerScreen> with WidgetsBindingObserver {
   late TimerMode _mode = widget.initialMode;
   _FocusPreset _preset = _FocusPreset.endless;
   int _customMinutes = 90;
@@ -96,12 +95,12 @@ class _TimerScreenState extends State<TimerScreen>
     super.dispose();
   }
 
-
   Future<void> _syncBlocking() async {
     final store = _store;
     if (store == null) return;
     await AppBlocker.setBlockingState(
-      enabled: _running &&
+      enabled:
+          _running &&
           _mode == TimerMode.focus &&
           !_completed &&
           store.blockApps &&
@@ -118,7 +117,6 @@ class _TimerScreenState extends State<TimerScreen>
     onBreak: false,
     blockedPackages: const [],
   );
-
 
   void _tick() {
     if (!mounted || _completed) return;
@@ -196,9 +194,9 @@ class _TimerScreenState extends State<TimerScreen>
   }
 
   Future<void> _showSleepEndRing() async {
-    final action = await Navigator.of(context).push<String>(
-      zoomFadeRoute(const AlarmRingScreen(sleepEndMode: true)),
-    );
+    final action = await Navigator.of(
+      context,
+    ).push<String>(zoomFadeRoute(const AlarmRingScreen(sleepEndMode: true)));
     if (!mounted) return;
     if (action == 'stop') {
       await _finishAndRecord();
@@ -212,31 +210,26 @@ class _TimerScreenState extends State<TimerScreen>
     }
   }
 
-
   Future<bool> _strictAllows(SessionStore store) async {
     if (_mode != TimerMode.focus || !store.strictMode || _completed) {
       return true;
     }
     HapticFeedback.heavyImpact();
-    final yes = await showPixelDialog<bool>(
+    final yes = await showNdDialog<bool>(
       context: context,
-      title: 'BREAK STRICT MODE?',
+      title: 'End strict session?',
       builder: (context) => Text(
-        'THIS SESSION IS LOCKED. LEAVING NOW DEFEATS THE POINT.',
-        style: TextStyle(
-          fontFamily: kFontTerminal,
-          fontSize: 19,
-          height: 1.25,
-          color: context.palette.textDim,
-        ),
+        'You locked this session in. Stopping now cuts it short and it will '
+        'not count towards your streak.',
+        style: context.palette.bodyDim,
       ),
       actions: (context) => [
         DialogAction(
-          label: 'STAY',
+          label: 'Keep going',
           onTap: () => Navigator.pop(context, false),
         ),
         DialogAction(
-          label: 'BREAK',
+          label: 'End it',
           danger: true,
           onTap: () => Navigator.pop(context, true),
         ),
@@ -295,7 +288,6 @@ class _TimerScreenState extends State<TimerScreen>
     );
   }
 
-
   int get _sleepSecondsRemaining {
     final now = DateTime.now();
     final targetMin = _wakeHour * 60 + _wakeMinute;
@@ -341,45 +333,41 @@ class _TimerScreenState extends State<TimerScreen>
       return switch (_mode) {
         TimerMode.focus =>
           _focusMinutes == null
-              ? 'ENDLESS — RUNS UNTIL YOU STOP'
-              : 'FOCUS — ${minutesLabel(_focusMinutes!)}',
+              ? 'Runs until you stop it'
+              : 'Focus for ${minutesLabel(_focusMinutes!)}',
         TimerMode.sleep =>
-          'SLEEP — ENDS AT ${_two(_wakeHour)}:${_two(_wakeMinute)}',
-        TimerMode.nap => 'NAP — ${minutesLabel(_napMinutes)}',
+          'Wakes you at ${_two(_wakeHour)}:${_two(_wakeMinute)}',
+        TimerMode.nap => 'Nap for ${minutesLabel(_napMinutes)}',
       };
     }
     if (_remainingSec > 0) {
-      return 'SNOOZING — ${(_remainingSec / 60).ceil()} MIN LEFT';
+      return 'Snoozing · ${(_remainingSec / 60).ceil()} min left';
     }
-    if (_completed) return 'SESSION COMPLETE';
-    if (_paused) return 'PAUSED — COUNTS AS DISTRACTED';
+    if (_completed) return 'Session complete';
+    if (_paused) return 'Paused · counts as distracted time';
     return switch (_mode) {
-      TimerMode.sleep =>
-        'SLEEP — ENDS AT ${_two(_wakeHour)}:${_two(_wakeMinute)}',
+      TimerMode.sleep => 'Wakes you at ${_two(_wakeHour)}:${_two(_wakeMinute)}',
       TimerMode.focus when _targetMinutes == null =>
-        'ENDLESS — RUNS UNTIL YOU STOP',
-      TimerMode.focus => 'FOCUS — ${_minutesLeft}M LEFT',
-      TimerMode.nap => 'NAP — ${_minutesLeft}M LEFT',
+        'Running until you stop it',
+      TimerMode.focus => '$_minutesLeft min left',
+      TimerMode.nap => '$_minutesLeft min left',
     };
   }
 
-
   Future<void> _pickCustomMinutes() async {
     var selected = _customMinutes;
-    final ok = await showPixelDialog<bool>(
+    final ok = await showNdDialog<bool>(
       context: context,
-      title: 'CUSTOM DURATION',
-      builder: (context) => _MinuteWheel(
-        initial: _customMinutes,
-        onChanged: (v) => selected = v,
-      ),
+      title: 'Custom duration',
+      builder: (context) =>
+          _MinuteWheel(initial: _customMinutes, onChanged: (v) => selected = v),
       actions: (context) => [
         DialogAction(
-          label: 'CANCEL',
+          label: 'Cancel',
           onTap: () => Navigator.pop(context, false),
         ),
         DialogAction(
-          label: 'SET',
+          label: 'Set',
           emphasized: true,
           onTap: () => Navigator.pop(context, true),
         ),
@@ -410,22 +398,18 @@ class _TimerScreenState extends State<TimerScreen>
       if (!saved || store.blockedApps.isEmpty) return;
     }
     if (value && !await AppBlocker.isAccessibilityEnabled() && mounted) {
-      await showPixelDialog<void>(
+      await showNdDialog<void>(
         context: context,
-        title: 'ENABLE APP BLOCKING',
+        title: 'Turn on app blocking',
         builder: (context) => Text(
-          'TURN ON NAVI APP BLOCKER IN ACCESSIBILITY SETTINGS.',
-          style: TextStyle(
-            fontFamily: kFontTerminal,
-            fontSize: 19,
-            height: 1.25,
-            color: context.palette.textDim,
-          ),
+          'NAVI needs its accessibility service enabled before it can block '
+          'apps. You only have to do this once.',
+          style: context.palette.bodyDim,
         ),
         actions: (context) => [
-          DialogAction(label: 'LATER', onTap: () => Navigator.pop(context)),
+          DialogAction(label: 'Later', onTap: () => Navigator.pop(context)),
           DialogAction(
-            label: 'OPEN',
+            label: 'Open settings',
             emphasized: true,
             onTap: () {
               unawaited(AppBlocker.openAccessibilitySettings());
@@ -446,7 +430,6 @@ class _TimerScreenState extends State<TimerScreen>
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
@@ -461,9 +444,13 @@ class _TimerScreenState extends State<TimerScreen>
         body: SafeArea(
           child: Column(
             children: [
-              PixelHeader(
-                title: 'PROTOCOL',
-                leading: PixelIconButton(glyph: Px.left, onTap: _onBack),
+              NdHeader(
+                title: switch (_mode) {
+                  TimerMode.focus => 'Focus',
+                  TimerMode.sleep => 'Sleep',
+                  TimerMode.nap => 'Nap',
+                },
+                leading: NdIconButton(glyph: Nd.left, onTap: _onBack),
               ),
               Expanded(
                 child: AnimatedSwitcher(
@@ -480,14 +467,13 @@ class _TimerScreenState extends State<TimerScreen>
                       child: child,
                     ),
                   ),
-                  child: _running
-                      ? _buildRunning(p)
-                      : _buildIdle(p, store),
+                  child: _running ? _buildRunning(p) : _buildIdle(p, store),
                 ),
               ),
               _StatsBar(
                 store: store,
-                showBlocking: _running &&
+                showBlocking:
+                    _running &&
                     _mode == TimerMode.focus &&
                     !_completed &&
                     store.blockApps &&
@@ -500,25 +486,29 @@ class _TimerScreenState extends State<TimerScreen>
     );
   }
 
-
   Widget _buildIdle(NaviPalette p, SessionStore store) {
     return ListView(
       key: const ValueKey('idle'),
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+      padding: const EdgeInsets.fromLTRB(
+        NdSpace.page,
+        NdSpace.xs,
+        NdSpace.page,
+        NdSpace.xl,
+      ),
       children: [
         _reveal(0, _modeToggle()),
-        const SizedBox(height: 24),
+        const SizedBox(height: NdSpace.xl),
         _reveal(
           1,
           Column(
             children: [
               _GhostClock(text: _display, showColon: true),
-              const SizedBox(height: 8),
+              const SizedBox(height: NdSpace.md),
               _label(p),
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: NdSpace.xl),
         _reveal(
           2,
           AnimatedSize(
@@ -539,12 +529,12 @@ class _TimerScreenState extends State<TimerScreen>
             ),
           ),
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: NdSpace.xl),
         _reveal(
           3,
-          PixelButton(
-            label: 'START',
-            glyph: Px.play,
+          NdButton(
+            label: 'Start',
+            glyph: Nd.play,
             filled: true,
             expand: true,
             height: 56,
@@ -557,16 +547,16 @@ class _TimerScreenState extends State<TimerScreen>
 
   Widget _modeToggle() {
     const labels = {
-      TimerMode.focus: 'FOCUS',
-      TimerMode.sleep: 'SLEEP',
-      TimerMode.nap: 'NAP',
+      TimerMode.focus: 'Focus',
+      TimerMode.sleep: 'Sleep',
+      TimerMode.nap: 'Nap',
     };
     return Row(
       children: [
         for (final (i, mode) in TimerMode.values.indexed) ...[
-          if (i > 0) const SizedBox(width: 6),
+          if (i > 0) const SizedBox(width: NdSpace.sm),
           Expanded(
-            child: PixelChip(
+            child: NdChip(
               label: labels[mode]!,
               selected: _mode == mode,
               onTap: () => setState(() => _mode = mode),
@@ -584,13 +574,7 @@ class _TimerScreenState extends State<TimerScreen>
         _modeLabel,
         key: ValueKey(_modeLabel),
         textAlign: TextAlign.center,
-        style: TextStyle(
-          fontFamily: kFontTerminal,
-          fontSize: 18,
-          letterSpacing: 2,
-          color: p.textDim,
-          height: 1.2,
-        ),
+        style: p.bodyDim,
       ),
     );
   }
@@ -600,56 +584,56 @@ class _TimerScreenState extends State<TimerScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('DURATION', style: p.h2),
-        const SizedBox(height: 10),
+        const SizedBox(height: NdSpace.md),
         Row(
           children: [
             Expanded(
-              child: PixelChip(
-                label: 'ENDLESS',
+              child: NdChip(
+                label: 'Open',
                 selected: _preset == _FocusPreset.endless,
                 onTap: () => setState(() => _preset = _FocusPreset.endless),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: NdSpace.sm),
             Expanded(
-              child: PixelChip(
-                label: '30M',
+              child: NdChip(
+                label: '30m',
                 selected: _preset == _FocusPreset.m30,
                 onTap: () => setState(() => _preset = _FocusPreset.m30),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: NdSpace.sm),
             Expanded(
-              child: PixelChip(
-                label: '60M',
+              child: NdChip(
+                label: '60m',
                 selected: _preset == _FocusPreset.m60,
                 onTap: () => setState(() => _preset = _FocusPreset.m60),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: NdSpace.sm),
             Expanded(
-              child: PixelChip(
-                label: 'CUSTOM',
+              child: NdChip(
+                label: 'Custom',
                 selected: _preset == _FocusPreset.custom,
                 onTap: () => unawaited(_pickCustomMinutes()),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: NdSpace.lg),
         _blockCard(p, store),
       ],
     );
   }
 
   Widget _blockCard(NaviPalette p, SessionStore store) {
-    return PixelCard(
+    return NdCard(
       child: Column(
         children: [
           Row(
             children: [
-              PixelIcon(Px.block, color: p.accent, size: 20),
-              const SizedBox(width: 12),
+              NdIcon(Nd.block, color: p.accent, size: 22),
+              const SizedBox(width: NdSpace.md),
               Expanded(
                 child: Tactile(
                   pressedScale: 0.97,
@@ -659,45 +643,34 @@ class _TimerScreenState extends State<TimerScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'BLOCK APPS',
-                          style: p.label.copyWith(
-                            color: p.text,
-                            fontSize: 8,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
+                        Text('Block apps', style: p.row),
+                        const SizedBox(height: 3),
                         Text(
                           store.blockedApps.isEmpty
-                              ? 'TAP TO EDIT LIST'
-                              : 'BLOCKING ${store.blockedApps.length} APPS',
-                          style: TextStyle(
-                            fontFamily: kFontTerminal,
-                            fontSize: 15,
-                            color: p.textDim,
-                            height: 1.1,
-                          ),
+                              ? 'Tap to choose which apps'
+                              : '${store.blockedApps.length} app'
+                                    '${store.blockedApps.length == 1 ? '' : 's'} selected',
+                          style: p.label.copyWith(fontSize: 11),
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              PixelSwitch(
+              const SizedBox(width: NdSpace.md),
+              NdSwitch(
                 value: store.blockApps,
-                onChanged: (value) =>
-                    unawaited(_toggleBlocking(store, value)),
+                onChanged: (value) => unawaited(_toggleBlocking(store, value)),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          PixelButton(
-            label: store.strictMode ? 'STRICT MODE ON' : 'ACTIVATE STRICT MODE',
-            glyph: Px.lock,
+          const SizedBox(height: NdSpace.lg),
+          NdButton(
+            label: store.strictMode ? 'Strict mode on' : 'Turn on strict mode',
+            glyph: Nd.lock,
             filled: store.strictMode,
             expand: true,
-            height: 44,
+            height: 46,
             onTap: () {
               Sfx.tick();
               unawaited(store.setStrictMode(!store.strictMode));
@@ -713,7 +686,7 @@ class _TimerScreenState extends State<TimerScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('WAKE AT', style: p.h2),
-        const SizedBox(height: 4),
+        const SizedBox(height: NdSpace.xs),
         _WakeWheels(
           hour: _wakeHour,
           minute: _wakeMinute,
@@ -731,14 +704,14 @@ class _TimerScreenState extends State<TimerScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('DURATION', style: p.h2),
-        const SizedBox(height: 10),
+        const SizedBox(height: NdSpace.md),
         Row(
           children: [
             for (final (i, minutes) in _napChoices.indexed) ...[
-              if (i > 0) const SizedBox(width: 6),
+              if (i > 0) const SizedBox(width: NdSpace.sm),
               Expanded(
-                child: PixelChip(
-                  label: '${minutes}M',
+                child: NdChip(
+                  label: '${minutes}m',
                   selected: _napMinutes == minutes,
                   onTap: () => setState(() => _napMinutes = minutes),
                 ),
@@ -767,11 +740,15 @@ class _TimerScreenState extends State<TimerScreen>
     );
   }
 
-
   Widget _buildRunning(NaviPalette p) {
     return Padding(
       key: const ValueKey('running'),
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+      padding: const EdgeInsets.fromLTRB(
+        NdSpace.page,
+        NdSpace.xs,
+        NdSpace.page,
+        NdSpace.xl,
+      ),
       child: Column(
         children: [
           const Spacer(flex: 2),
@@ -780,47 +757,57 @@ class _TimerScreenState extends State<TimerScreen>
             showColon: _blink || _paused || _completed,
             dimmed: _paused,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: NdSpace.md),
           _label(p),
           const Spacer(flex: 3),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  border: Border.all(color: p.borderHi, width: 1.5),
-                ),
-                child: Center(
-                  child: PixelIconButton(
-                    glyph: _completed ? Px.check : Px.stop,
-                    color: p.accent,
-                    size: 20,
-                    onTap: () => unawaited(_stopPressed()),
+              Tactile(
+                pressedScale: 0.9,
+                child: GestureDetector(
+                  onTap: () => unawaited(_stopPressed()),
+                  child: Container(
+                    width: 62,
+                    height: 62,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: p.panel,
+                      border: Border.all(color: p.borderHi),
+                    ),
+                    child: Center(
+                      child: NdIcon(
+                        _completed ? Nd.check : Nd.stop,
+                        color: p.text,
+                        size: 24,
+                      ),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 22),
+              const SizedBox(width: NdSpace.xl),
               Tactile(
-                pressedScale: 0.88,
+                pressedScale: 0.9,
                 child: GestureDetector(
                   onTap: _completed ? null : () => unawaited(_togglePause()),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    width: 76,
-                    height: 76,
-                    color: _completed ? p.accentGhost : p.accent,
+                    width: 82,
+                    height: 82,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _completed ? p.panelHi : p.accent,
+                    ),
                     child: Center(
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 200),
                         transitionBuilder: (child, animation) =>
                             ScaleTransition(scale: animation, child: child),
-                        child: PixelIcon(
-                          _paused ? Px.play : Px.pause,
+                        child: NdIcon(
+                          _paused ? Nd.play : Nd.pause,
                           key: ValueKey(_paused),
-                          color: Colors.black,
-                          size: 26,
+                          color: _completed ? p.textGhost : p.onAccent,
+                          size: 32,
                         ),
                       ),
                     ),
@@ -829,7 +816,7 @@ class _TimerScreenState extends State<TimerScreen>
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: NdSpace.sm),
         ],
       ),
     );
@@ -852,13 +839,8 @@ class _GhostClock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final ghost = p.textGhost.withValues(alpha: 0.15);
-    final digitStyle = TextStyle(
-      fontFamily: kFontTerminal,
-      fontSize: 110,
-      height: 1,
-      color: p.accent,
-    );
+    final ghost = p.textGhost.withValues(alpha: 0.18);
+    final digitStyle = p.dot(110, color: p.text, letterSpacing: 0);
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 400),
       opacity: dimmed ? 0.35 : 1,
@@ -916,7 +898,12 @@ class _StatsBar extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: p.border)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+      padding: const EdgeInsets.fromLTRB(
+        NdSpace.page,
+        NdSpace.lg,
+        NdSpace.page,
+        NdSpace.lg,
+      ),
       child: Column(
         children: [
           AnimatedSize(
@@ -925,15 +912,16 @@ class _StatsBar extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: showBlocking
                 ? Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: NdSpace.md),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        PixelIcon(Px.block, color: p.accentMid, size: 12),
-                        const SizedBox(width: 8),
+                        NdIcon(Nd.block, color: p.accent, size: 15),
+                        const SizedBox(width: NdSpace.sm),
                         Text(
-                          'BLOCKING ${store.blockedApps.length} APPS',
-                          style: p.label.copyWith(color: p.accentMid),
+                          'Blocking ${store.blockedApps.length} app'
+                          '${store.blockedApps.length == 1 ? '' : 's'}',
+                          style: p.label.copyWith(color: p.accent),
                         ),
                       ],
                     ),
@@ -942,9 +930,9 @@ class _StatsBar extends StatelessWidget {
           ),
           Row(
             children: [
-              _stat(p, 'STREAK', '${store.focusStreak}D'),
+              _stat(p, 'STREAK', '${store.focusStreak}d'),
               _stat(p, 'FOCUS TODAY', minutesLabel(store.focusedTodayMin)),
-              _stat(p, 'SLEEP LAST', minutesLabel(store.sleepLastMin)),
+              _stat(p, 'LAST SLEEP', minutesLabel(store.sleepLastMin)),
             ],
           ),
         ],
@@ -956,17 +944,9 @@ class _StatsBar extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(label, style: p.label),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: kFontTerminal,
-              fontSize: 26,
-              color: p.text,
-              height: 1,
-            ),
-          ),
+          Text(label, style: p.micro),
+          const SizedBox(height: NdSpace.sm),
+          Text(value, style: p.dot(24, color: p.text)),
         ],
       ),
     );
@@ -991,8 +971,9 @@ class _WakeWheels extends StatefulWidget {
 class _WakeWheelsState extends State<_WakeWheels> {
   late final FixedExtentScrollController _hourCtrl =
       FixedExtentScrollController(initialItem: widget.hour);
-  late final FixedExtentScrollController _minCtrl =
-      FixedExtentScrollController(initialItem: widget.minute);
+  late final FixedExtentScrollController _minCtrl = FixedExtentScrollController(
+    initialItem: widget.minute,
+  );
   late int _hour = widget.hour;
   late int _minute = widget.minute;
 
@@ -1012,19 +993,17 @@ class _WakeWheelsState extends State<_WakeWheels> {
         alignment: Alignment.center,
         children: [
           Container(
-            height: 58,
-            margin: const EdgeInsets.symmetric(horizontal: 56),
+            height: 60,
+            margin: const EdgeInsets.symmetric(horizontal: 48),
             decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: p.border),
-                bottom: BorderSide(color: p.border),
-              ),
+              color: p.panel,
+              borderRadius: BorderRadius.circular(NdRadius.inner),
             ),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              PixelWheel(
+              NdWheel(
                 itemCount: 24,
                 controller: _hourCtrl,
                 labelFor: _two,
@@ -1036,18 +1015,10 @@ class _WakeWheelsState extends State<_WakeWheels> {
                 },
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  ':',
-                  style: TextStyle(
-                    fontFamily: kFontTerminal,
-                    fontSize: 46,
-                    color: p.textDim,
-                    height: 1,
-                  ),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: NdSpace.xs),
+                child: Text(':', style: p.dot(40, color: p.textGhost)),
               ),
-              PixelWheel(
+              NdWheel(
                 itemCount: 60,
                 controller: _minCtrl,
                 labelFor: _two,
@@ -1095,7 +1066,7 @@ class _MinuteWheelState extends State<_MinuteWheel> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          PixelWheel(
+          NdWheel(
             itemCount: 36,
             controller: _ctrl,
             labelFor: (i) => '${(i + 1) * 5}',
@@ -1103,8 +1074,8 @@ class _MinuteWheelState extends State<_MinuteWheel> {
             fontSize: 44,
             onChanged: (i) => widget.onChanged((i + 1) * 5),
           ),
-          const SizedBox(width: 12),
-          Text('MIN', style: p.label),
+          const SizedBox(width: NdSpace.md),
+          Text('minutes', style: p.label),
         ],
       ),
     );

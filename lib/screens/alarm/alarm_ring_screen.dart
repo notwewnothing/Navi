@@ -6,11 +6,10 @@ import 'package:flutter/services.dart';
 import '../../models/alarm.dart';
 import '../../services/alarm_buzz.dart';
 import '../../services/alarm_store.dart';
-import '../../services/easter_eggs.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
-import '../../widgets/glitch.dart';
-import '../../widgets/pixel_widgets.dart';
+import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_widgets.dart';
 
 class AlarmRingScreen extends StatefulWidget {
   const AlarmRingScreen({super.key, this.alarm, this.sleepEndMode = false})
@@ -32,13 +31,18 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
   bool _bright = true;
   bool _closing = false;
   DateTime _now = DateTime.now();
-  String _wakeLine = EasterEggs.randomWakeLine();
+  int _lineIndex = 0;
 
-  // app-lifetime state so snooze taunts escalate across all ring instances
-  static int _sessionSnoozes = 0;
+  static const _wakeLines = <String>[
+    'Time to get up.',
+    'Your day is waiting.',
+    'Up and at it.',
+    'Morning. Let\'s go.',
+    'Start the day.',
+  ];
 
-  // hard cap, the alarm never rings longer than 33 minutes
-  static const _sequenceLength = Duration(minutes: 33);
+  // hard cap, the alarm never rings longer than 30 minutes
+  static const _sequenceLength = Duration(minutes: 30);
 
   @override
   void initState() {
@@ -51,8 +55,10 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
       if (mounted) setState(() => _bright = !_bright);
     });
 
-    _lineTimer = Timer.periodic(const Duration(seconds: 6), (_) {
-      _rotateLine();
+    _lineTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (mounted) {
+        setState(() => _lineIndex = (_lineIndex + 1) % _wakeLines.length);
+      }
     });
 
     if (widget.sleepEndMode) {
@@ -76,16 +82,6 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
       _buzz.detach();
     }
     super.dispose();
-  }
-
-  void _rotateLine() {
-    var next = EasterEggs.randomWakeLine();
-    var guard = 0;
-    // avoid repeating the same wake line, give up after 8 tries
-    while (next == _wakeLine && ++guard < 8) {
-      next = EasterEggs.randomWakeLine();
-    }
-    if (mounted) setState(() => _wakeLine = next);
   }
 
   Future<void> _finish() async {
@@ -114,11 +110,8 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
     alarm.snoozeMinutes = minutes;
     await store.snooze(alarm);
     await _buzz.stop();
-    _sessionSnoozes++;
     if (!mounted) return;
-    if (_sessionSnoozes >= 10) {
-      EasterEggs.glitchMoment(context, lainSnoozeTaunt);
-    }
+    showNdToast(context, 'Snoozed for $minutes min', glyph: Nd.alarm);
     Navigator.of(context).pop();
   }
 
@@ -164,7 +157,7 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
     return PopScope(
       canPop: widget.sleepEndMode,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: p.bg,
         body: Stack(
           children: [
             Positioned.fill(
@@ -186,7 +179,7 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
             ),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(NdSpace.xl),
                 child: TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0, end: 1),
                   duration: const Duration(milliseconds: 700),
@@ -195,7 +188,7 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
                     children: [
                       const Spacer(),
                       _reveal(t, 0, _timeBlock(p, displayTime)),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: NdSpace.xl),
                       _reveal(
                         t,
                         1,
@@ -204,10 +197,13 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
                           switchInCurve: Curves.easeOut,
                           switchOutCurve: Curves.easeOut,
                           child: Text(
-                            _wakeLine,
-                            key: ValueKey(_wakeLine),
+                            _wakeLines[_lineIndex],
+                            key: ValueKey(_lineIndex),
                             textAlign: TextAlign.center,
-                            style: p.quote.copyWith(fontSize: 24),
+                            style: p.body.copyWith(
+                              fontSize: 18,
+                              color: p.textDim,
+                            ),
                           ),
                         ),
                       ),
@@ -222,18 +218,18 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
                             style: p.h2.copyWith(color: p.accent),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: NdSpace.lg),
                       ],
                       _reveal(t, 2, _snoozeButtons()),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: NdSpace.md),
                       _reveal(
                         t,
                         3,
-                        PixelButton(
-                          label: 'STOP',
+                        NdButton(
+                          label: 'Stop',
                           filled: true,
                           expand: true,
-                          height: 68,
+                          height: 64,
                           onTap: _stop,
                         ),
                       ),
@@ -255,9 +251,9 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
           Text(
             widget.alarm!.label.toUpperCase(),
             textAlign: TextAlign.center,
-            style: p.h2.copyWith(color: p.textDim),
+            style: p.h2,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: NdSpace.lg),
         ],
         AnimatedScale(
           scale: _bright ? 1 : 0.96,
@@ -268,16 +264,9 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
             duration: const Duration(milliseconds: 350),
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: GlitchText(
+              child: Text(
                 displayTime,
-                intensity: 0.06,
-                interval: const Duration(seconds: 3),
-                style: TextStyle(
-                  fontFamily: kFontTerminal,
-                  fontSize: 170,
-                  color: p.accent,
-                  height: 1,
-                ),
+                style: p.dot(150, color: p.text, letterSpacing: 4),
               ),
             ),
           ),
@@ -288,10 +277,10 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
 
   Widget _snoozeButtons() {
     if (widget.sleepEndMode) {
-      return PixelButton(
-        label: 'SNOOZE',
+      return NdButton(
+        label: 'Snooze 10 min',
         expand: true,
-        height: 68,
+        height: 64,
         onTap: () => _snooze(10),
       );
     }
@@ -303,10 +292,10 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final (i, minutes) in const [5, 10, 15].indexed) ...[
-              if (i > 0) const SizedBox(width: 10),
-              PixelButton(
-                label: 'SNOOZE $minutes',
-                height: 68,
+              if (i > 0) const SizedBox(width: NdSpace.md),
+              NdButton(
+                label: 'Snooze $minutes',
+                height: 64,
                 onTap: () => _snooze(minutes),
               ),
             ],
