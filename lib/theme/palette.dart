@@ -5,9 +5,6 @@ import 'package:flutter/material.dart';
 const kFontDot = 'Ndot';
 const kFontUI = 'Roboto';
 
-const kFontPixel = 'PixelDisplay';
-const kFontTerminal = 'Terminal';
-
 // Nothing rounds hard. Cards and sheets are near-squircles, controls are pills.
 abstract final class NdRadius {
   static const card = 24.0;

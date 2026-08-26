@@ -1,5 +1,5 @@
 name: navi
-description: "NAVI — habits, journal, schedule. Present day, present time."
+description: "NAVI — habits, journal, schedule and focus."
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -39,7 +39,7 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/icon/icon.png"
-  adaptive_icon_background: "#020402"
+  adaptive_icon_background: "#000000"
   adaptive_icon_foreground: "assets/icon/adaptive_foreground.png"
   adaptive_icon_monochrome: "assets/icon/adaptive_monochrome.png"
 
@@ -52,9 +52,3 @@ flutter:
     - family: Ndot
       fonts:
         - asset: assets/fonts/NOTHING.otf.ttf
-    - family: PixelDisplay
-      fonts:
-        - asset: assets/fonts/PressStart2P-Regular.ttf
-    - family: Terminal
-      fonts:
-        - asset: assets/fonts/VT323-Regular.ttf

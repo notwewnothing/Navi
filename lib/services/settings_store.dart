@@ -5,7 +5,6 @@ import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/easter_eggs.dart';
 import '../theme/palette.dart';
 
 class SettingsStore extends ChangeNotifier {
@@ -17,7 +16,7 @@ class SettingsStore extends ChangeNotifier {
   SharedPreferences? _prefs;
   bool _loaded = false;
 
-  String _displayName = 'LAIN';
+  String _displayName = 'YOU';
   int _avatarIndex = 0;
   int _defaultReminderMinutes = 9 * 60;
   int _photoQuality = 1;
@@ -26,10 +25,7 @@ class SettingsStore extends ChangeNotifier {
   int _accentIndex = 0;
   bool _amoled = false;
   double _fontScale = 1.0;
-  bool _scanlinesUnlocked = false;
-  bool _scanlinesEnabled = false;
   bool _sfxEnabled = true;
-  int _taglineIndex = 0;
 
   bool get isLoaded => _loaded;
   String get displayName => _displayName;
@@ -41,8 +37,6 @@ class SettingsStore extends ChangeNotifier {
   int get accentIndex => _accentIndex;
   bool get amoled => _amoled;
   double get fontScale => _fontScale;
-  bool get scanlinesUnlocked => _scanlinesUnlocked;
-  bool get scanlinesEnabled => _scanlinesEnabled && _scanlinesUnlocked;
   bool get sfxEnabled => _sfxEnabled;
 
   Accent get accent => accents[_accentIndex.clamp(0, accents.length - 1)];
@@ -54,15 +48,13 @@ class SettingsStore extends ChangeNotifier {
     _ => 95,
   };
 
-  String get tagline => lainTaglines[_taglineIndex % lainTaglines.length];
-
   Future<void> init() async {
     try {
       _prefs = await SharedPreferences.getInstance();
       final raw = _prefs?.getString(_prefsKey);
       if (raw != null) {
         final data = (jsonDecode(raw) as Map).cast<String, Object?>();
-        _displayName = data['displayName'] as String? ?? 'LAIN';
+        _displayName = data['displayName'] as String? ?? 'YOU';
         _avatarIndex = data['avatarIndex'] as int? ?? 0;
         _defaultReminderMinutes =
             data['defaultReminderMinutes'] as int? ?? 9 * 60;
@@ -72,22 +64,17 @@ class SettingsStore extends ChangeNotifier {
         _accentIndex = data['accentIndex'] as int? ?? 0;
         _amoled = data['amoled'] as bool? ?? false;
         _fontScale = (data['fontScale'] as num?)?.toDouble() ?? 1.0;
-        _scanlinesUnlocked = data['scanlinesUnlocked'] as bool? ?? false;
-        _scanlinesEnabled = data['scanlinesEnabled'] as bool? ?? false;
         _sfxEnabled = data['sfxEnabled'] as bool? ?? true;
-        _taglineIndex = data['taglineIndex'] as int? ?? 0;
       }
-    // corrupt or partial saves aren't worth crashing over, default and move on
+      // corrupt or partial saves aren't worth crashing over, default and move on
     } catch (_) {}
-    // rotate the tagline every launch so it doesn't get stale
-    _taglineIndex = (_taglineIndex + 1) % lainTaglines.length;
     _loaded = true;
     await _save();
     notifyListeners();
   }
 
   Future<void> setDisplayName(String value) async {
-    _displayName = value.trim().isEmpty ? 'LAIN' : value.trim();
+    _displayName = value.trim().isEmpty ? 'YOU' : value.trim();
     await _save();
     notifyListeners();
   }
@@ -140,19 +127,6 @@ class SettingsStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> unlockScanlines() async {
-    _scanlinesUnlocked = true;
-    _scanlinesEnabled = true;
-    await _save();
-    notifyListeners();
-  }
-
-  Future<void> setScanlinesEnabled(bool value) async {
-    _scanlinesEnabled = value;
-    await _save();
-    notifyListeners();
-  }
-
   Future<void> setSfxEnabled(bool value) async {
     _sfxEnabled = value;
     await _save();
@@ -194,10 +168,7 @@ class SettingsStore extends ChangeNotifier {
           'accentIndex': _accentIndex,
           'amoled': _amoled,
           'fontScale': _fontScale,
-          'scanlinesUnlocked': _scanlinesUnlocked,
-          'scanlinesEnabled': _scanlinesEnabled,
           'sfxEnabled': _sfxEnabled,
-          'taglineIndex': _taglineIndex,
         }),
       );
     } catch (_) {}
