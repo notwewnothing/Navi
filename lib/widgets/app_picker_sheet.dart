@@ -13,6 +13,7 @@ Future<List<String>?> showAppPickerSheet(
 }) {
   return showNdSheet<List<String>>(
     context: context,
+    heightFactor: 0.85,
     builder: (context) => _AppPickerSheet(initial: initial),
   );
 }
@@ -35,7 +36,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
   Widget build(BuildContext context) {
     final p = context.palette;
     return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.72,
+      height: MediaQuery.of(context).size.height * 0.85,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

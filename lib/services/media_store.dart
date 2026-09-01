@@ -8,7 +8,13 @@ class MediaStore {
   static Future<Directory> _documents() async =>
       _docs ??= await getApplicationDocumentsDirectory();
 
-  static Future<String> importFile(String sourcePath, {String? ext}) async {
+  /// Copies [sourcePath] into app storage. [onProgress] reports bytes copied
+  /// out of the total; without it the copy runs in one shot.
+  static Future<String> importFile(
+    String sourcePath, {
+    String? ext,
+    void Function(int done, int total)? onProgress,
+  }) async {
     final docs = await _documents();
     final now = DateTime.now();
     // media is bucketed by month so old files are easy to find and prune
@@ -17,7 +23,30 @@ class MediaStore {
     await dir.create(recursive: true);
     final extension = ext ?? sourcePath.split('.').last;
     final name = '${now.millisecondsSinceEpoch}.$extension';
-    await File(sourcePath).copy('${dir.path}/$name');
+    final destination = '${dir.path}/$name';
+    final source = File(sourcePath);
+
+    if (onProgress == null) {
+      await source.copy(destination);
+    } else {
+      final total = await source.length();
+      var done = 0;
+      final sink = File(destination).openWrite();
+      try {
+        // addStream keeps the read back-pressured, so big videos don't buffer
+        await sink.addStream(
+          source.openRead().map((chunk) {
+            done += chunk.length;
+            onProgress(done, total);
+            return chunk;
+          }),
+        );
+        await sink.flush();
+      } finally {
+        await sink.close();
+      }
+      onProgress(total, total);
+    }
     return 'media/$month/$name';
   }
 

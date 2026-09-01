@@ -55,94 +55,109 @@ class MonthGrid extends StatelessWidget {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            NdIconButton(
-              glyph: Nd.left,
-              tooltip: 'Previous month',
-              onTap: () => _shift(-1),
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  '${_months[month.month - 1]} ${month.year}',
-                  style: p.title,
-                ),
-              ),
-            ),
-            NdIconButton(
-              glyph: Nd.right,
-              tooltip: 'Next month',
-              onTap: () => _shift(1),
-            ),
-          ],
-        ),
-        const SizedBox(height: NdSpace.md),
-        Row(
-          children: [
-            for (final label in _dayLabels)
-              Expanded(
-                child: Center(child: Text(label, style: p.micro)),
-              ),
-          ],
-        ),
-        const SizedBox(height: NdSpace.sm),
-        for (var week = 0; week < totalCells ~/ 7; week++) ...[
+    return GestureDetector(
+      // swiping the grid is quicker than aiming for the arrows
+      onHorizontalDragEnd: (details) {
+        final v = details.primaryVelocity ?? 0;
+        if (v > 240) _shift(-1);
+        if (v < -240) _shift(1);
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           Row(
             children: [
-              for (var d = 0; d < 7; d++)
+              NdIconButton(
+                glyph: Nd.left,
+                tooltip: 'Previous month',
+                onTap: () => _shift(-1),
+              ),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    '${_months[month.month - 1]} ${month.year}',
+                    style: p.title,
+                  ),
+                ),
+              ),
+              NdIconButton(
+                glyph: Nd.right,
+                tooltip: 'Next month',
+                onTap: () => _shift(1),
+              ),
+            ],
+          ),
+          const SizedBox(height: NdSpace.md),
+          Row(
+            children: [
+              for (final (i, label) in _dayLabels.indexed)
                 Expanded(
-                  child: AspectRatio(
-                    aspectRatio: cellAspect,
-                    child: Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: Builder(
-                        builder: (context) {
-                          final index = week * 7 + d - leading;
-                          if (index < 0 || index >= daysInMonth) {
-                            return const SizedBox.shrink();
-                          }
-                          final day = DateTime(
-                            month.year,
-                            month.month,
-                            index + 1,
-                          );
-                          final isToday = day == today;
-                          return Tactile(
-                            pressedScale: 0.9,
-                            child: GestureDetector(
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                Sfx.tick();
-                                onTapDay(day);
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(
-                                    NdRadius.small,
-                                  ),
-                                  border: Border.all(
-                                    color: isToday ? p.accent : p.border,
-                                    width: isToday ? 1.5 : 1,
-                                  ),
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: cellBuilder(context, day),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                  child: Center(
+                    child: Text(
+                      label,
+                      style: i >= 5
+                          ? p.micro.copyWith(color: p.textGhost)
+                          : p.micro,
                     ),
                   ),
                 ),
             ],
           ),
+          const SizedBox(height: NdSpace.sm),
+          for (var week = 0; week < totalCells ~/ 7; week++) ...[
+            Row(
+              children: [
+                for (var d = 0; d < 7; d++)
+                  Expanded(
+                    child: AspectRatio(
+                      aspectRatio: cellAspect,
+                      child: Padding(
+                        padding: const EdgeInsets.all(2),
+                        child: Builder(
+                          builder: (context) {
+                            final index = week * 7 + d - leading;
+                            if (index < 0 || index >= daysInMonth) {
+                              return const SizedBox.shrink();
+                            }
+                            final day = DateTime(
+                              month.year,
+                              month.month,
+                              index + 1,
+                            );
+                            final isToday = day == today;
+                            return Tactile(
+                              pressedScale: 0.9,
+                              child: GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  Sfx.tick();
+                                  onTapDay(day);
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      NdRadius.small,
+                                    ),
+                                    border: Border.all(
+                                      color: isToday ? p.accent : p.border,
+                                      width: isToday ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: cellBuilder(context, day),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

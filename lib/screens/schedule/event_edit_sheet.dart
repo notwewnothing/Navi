@@ -448,33 +448,38 @@ class _EventEditSheetState extends State<_EventEditSheet> {
                       _ => const SizedBox(width: double.infinity),
                     },
                   ),
-                  const SizedBox(height: NdSpace.xxl),
-
-                  Row(
-                    children: [
-                      if (_isEditing)
-                        NdButton(
-                          label: 'Delete',
-                          danger: true,
-                          height: 46,
-                          onTap: _delete,
-                        ),
-                      const Spacer(),
-                      DialogAction(
-                        label: 'Cancel',
-                        onTap: () => Navigator.of(context).pop(),
-                      ),
-                      const SizedBox(width: NdSpace.xs),
-                      NdButton(
-                        label: 'Save',
-                        filled: true,
-                        height: 46,
-                        onTap: _save,
-                      ),
-                    ],
-                  ),
                 ],
               ),
+            ),
+          ),
+          // pinned so Save stays reachable however tall the form gets
+          Container(
+            padding: const EdgeInsets.fromLTRB(
+              NdSpace.page,
+              NdSpace.md,
+              NdSpace.page,
+              NdSpace.md,
+            ),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: p.border)),
+            ),
+            child: Row(
+              children: [
+                if (_isEditing)
+                  NdButton(
+                    label: 'Delete',
+                    danger: true,
+                    height: 46,
+                    onTap: _delete,
+                  ),
+                const Spacer(),
+                DialogAction(
+                  label: 'Cancel',
+                  onTap: () => Navigator.of(context).pop(),
+                ),
+                const SizedBox(width: NdSpace.xs),
+                NdButton(label: 'Save', filled: true, height: 46, onTap: _save),
+              ],
             ),
           ),
         ],

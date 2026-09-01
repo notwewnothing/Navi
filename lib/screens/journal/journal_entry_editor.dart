@@ -14,6 +14,7 @@ import '../../services/settings_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
 import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_video_player.dart';
 import '../../widgets/nd_widgets.dart';
 import '../../widgets/routes.dart';
 import 'journal_entry_view.dart' show MediaImage, journalDuration, journalStamp;
@@ -37,20 +38,35 @@ Future<void> showJournalEntrySheet(
     context: context,
     builder: (_) => _EntrySheet(start: start),
   );
-  if (result == null) return;
+  if (result == null || !context.mounted) return;
   switch (result) {
     case (JournalType.text, _):
       navigator.push(slideUpRoute(const _TextEntryScreen()));
     case (JournalType.photo, final ImageSource source):
-      await _pickAndCaption(navigator, settings, JournalType.photo, source);
+      await _pickAndCaption(
+        context,
+        navigator,
+        settings,
+        JournalType.photo,
+        source,
+      );
     case (JournalType.video, final ImageSource source):
-      await _pickAndCaption(navigator, settings, JournalType.video, source);
+      await _pickAndCaption(
+        context,
+        navigator,
+        settings,
+        JournalType.video,
+        source,
+      );
     case _:
       break;
   }
 }
 
+String _mb(int bytes) => (bytes / (1024 * 1024)).toStringAsFixed(1);
+
 Future<void> _pickAndCaption(
+  BuildContext context,
   NavigatorState navigator,
   SettingsStore settings,
   JournalType type,
@@ -73,7 +89,28 @@ Future<void> _pickAndCaption(
     picked = null;
   }
   if (picked == null) return;
-  final relativePath = await MediaStore.importFile(picked.path);
+  final String relativePath;
+  // videos are big enough that the copy is worth showing
+  if (type == JournalType.video && context.mounted) {
+    final handle = showNdProgress(
+      context,
+      title: 'IMPORTING',
+      detail: 'Copying video',
+    );
+    try {
+      relativePath = await MediaStore.importFile(
+        picked.path,
+        onProgress: (done, total) => handle.update(
+          total == 0 ? 1 : done / total,
+          detailText: '${_mb(done)} / ${_mb(total)} MB',
+        ),
+      );
+    } finally {
+      handle.close();
+    }
+  } else {
+    relativePath = await MediaStore.importFile(picked.path);
+  }
   navigator.push(
     slideUpRoute(_MediaCaptionScreen(type: type, mediaPath: relativePath)),
   );
@@ -714,46 +751,9 @@ class _MediaCaptionScreenState extends State<_MediaCaptionScreen> {
         ),
       );
     }
-    final ratio = video.value.aspectRatio <= 0
-        ? 16 / 9
-        : video.value.aspectRatio;
-    return ClipRRect(
+    return NdVideoPlayer(
+      controller: video,
       borderRadius: BorderRadius.circular(NdRadius.card),
-      child: Container(
-        color: p.panel,
-        child: AspectRatio(
-          aspectRatio: ratio,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              VideoPlayer(video),
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: NdSpace.lg,
-                    vertical: NdSpace.md,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(NdRadius.pill),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      NdIcon(Nd.video, color: p.accent, size: 18),
-                      const SizedBox(width: NdSpace.sm),
-                      Text(
-                        journalDuration(_videoDurationMs),
-                        style: p.dot(20, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

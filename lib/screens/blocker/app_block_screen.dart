@@ -135,7 +135,7 @@ class _AppBlockScreenState extends State<AppBlockScreen>
                     _Reveal(
                       index: 2,
                       child: SizedBox(
-                        height: 200,
+                        height: 210,
                         child: EmptyState(
                           message:
                               'No rules yet.\nA rule blocks chosen apps at set times.',

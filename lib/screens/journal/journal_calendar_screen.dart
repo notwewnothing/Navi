@@ -52,10 +52,43 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
     for (final log in habits.photoLogsForDay(day)) log.photoPath!,
   ];
 
+  /// One pass over the month: the grid and the header both read from this
+  /// instead of re-querying the stores per cell.
+  Map<int, ({int entries, int logs, List<String> photos})> _monthData(
+    JournalStore journal,
+    HabitStore habits,
+  ) {
+    final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
+    return {
+      for (var d = 1; d <= daysInMonth; d++)
+        d: (
+          entries: journal
+              .entriesForDay(DateTime(_month.year, _month.month, d))
+              .length,
+          logs: habits
+              .logsForDay(DateTime(_month.year, _month.month, d))
+              .length,
+          photos: _photosFor(
+            journal,
+            habits,
+            DateTime(_month.year, _month.month, d),
+          ),
+        ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final journal = JournalScope.of(context);
     final habits = HabitScope.of(context);
+    final p = context.palette;
+    final data = _monthData(journal, habits);
+    final totals = (
+      entries: data.values.fold(0, (a, d) => a + d.entries),
+      photos: data.values.fold(0, (a, d) => a + d.photos.length),
+      checkIns: data.values.fold(0, (a, d) => a + d.logs),
+      days: data.values.where((d) => d.entries > 0 || d.logs > 0).length,
+    );
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -79,11 +112,33 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
                 children: [
                   MonthGrid(
                     month: _month,
-                    cellAspect: 0.85,
                     onMonthChanged: (m) => setState(() => _month = m),
-                    cellBuilder: (context, day) =>
-                        _cell(context, journal, habits, day),
+                    cellBuilder: (context, day) => _cell(
+                      context,
+                      day,
+                      data[day.day] ??
+                          (entries: 0, logs: 0, photos: const <String>[]),
+                    ),
                     onTapDay: _openDay,
+                  ),
+                  const SizedBox(height: NdSpace.xl),
+                  _MonthSummary(totals: totals),
+                  const SizedBox(height: NdSpace.lg),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _legendDot(p.accent),
+                      const SizedBox(width: NdSpace.sm),
+                      Text('journal', style: p.micro),
+                      const SizedBox(width: NdSpace.lg),
+                      _legendDot(p.textDim),
+                      const SizedBox(width: NdSpace.sm),
+                      Text('check-in', style: p.micro),
+                      const SizedBox(width: NdSpace.lg),
+                      NdIcon(Nd.camera, color: p.textGhost, size: 12),
+                      const SizedBox(width: NdSpace.sm),
+                      Text('photo', style: p.micro),
+                    ],
                   ),
                 ],
               ),
@@ -94,107 +149,116 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
     );
   }
 
+  Widget _legendDot(Color color) => Container(
+    width: 6,
+    height: 6,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
+
   Widget _cell(
     BuildContext context,
-    JournalStore journal,
-    HabitStore habits,
     DateTime day,
+    ({int entries, int logs, List<String> photos}) data,
   ) {
     final p = context.palette;
-    final photos = _photosFor(journal, habits, day);
-    if (photos.isEmpty) {
-      final hasAny =
-          journal.hasEntryOn(day) || habits.logsForDay(day).isNotEmpty;
-      return Container(
-        color: p.panel,
-        child: Stack(
-          children: [
-            _dayTag(p, day.day, onPhoto: false),
-            if (hasAny)
-              Positioned(
-                right: 5,
-                bottom: 5,
-                child: Container(
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: p.accent,
-                    shape: BoxShape.circle,
-                  ),
+    final photos = data.photos;
+    final now = DateTime.now();
+    final isFuture = day.isAfter(DateTime(now.year, now.month, now.day));
+
+    if (photos.isNotEmpty) {
+      // one photo reads at this size, a four-way collage does not
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          MediaImage(photos.first),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 24,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.65),
+                    Colors.black.withValues(alpha: 0),
+                  ],
                 ),
               ),
-          ],
-        ),
+            ),
+          ),
+          _dayTag(p, day.day, onPhoto: true),
+          if (photos.length > 1)
+            Positioned(
+              right: 3,
+              bottom: 3,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.65),
+                  borderRadius: BorderRadius.circular(NdRadius.small),
+                ),
+                child: Text(
+                  '${photos.length}',
+                  style: p.micro.copyWith(color: Colors.white, fontSize: 9),
+                ),
+              ),
+            ),
+        ],
       );
     }
-    return Stack(
-      fit: StackFit.expand,
-      children: [_collage(p, photos), _dayTag(p, day.day, onPhoto: true)],
+
+    return Container(
+      color: isFuture ? Colors.transparent : p.panel,
+      child: Stack(
+        children: [
+          _dayTag(p, day.day, onPhoto: false, dim: isFuture),
+          if (data.entries > 0 || data.logs > 0)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 6,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // one dot per kind, not per item - the sheet has the detail
+                  if (data.entries > 0) _legendDot(p.accent),
+                  if (data.entries > 0 && data.logs > 0)
+                    const SizedBox(width: 4),
+                  if (data.logs > 0) _legendDot(p.textDim),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _dayTag(NaviPalette p, int day, {required bool onPhoto}) => Positioned(
+  Widget _dayTag(
+    NaviPalette p,
+    int day, {
+    required bool onPhoto,
+    bool dim = false,
+  }) => Positioned(
     top: 0,
     left: 0,
-    child: Container(
-      padding: const EdgeInsets.fromLTRB(5, 3, 6, 3),
-      decoration: BoxDecoration(
-        color: onPhoto
-            ? Colors.black.withValues(alpha: 0.6)
-            : Colors.transparent,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(NdRadius.small),
-          bottomRight: Radius.circular(NdRadius.small),
-        ),
-      ),
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(6, 4, 6, 3),
       child: Text(
         '$day',
-        style: p.micro.copyWith(color: onPhoto ? Colors.white : p.textGhost),
+        style: p.dot(
+          13,
+          color: onPhoto
+              ? Colors.white
+              : dim
+              ? p.textGhost
+              : p.textDim,
+        ),
       ),
     ),
   );
-
-  Widget _collage(
-    NaviPalette p,
-    List<String> photos,
-  ) => switch (photos.length) {
-    1 => MediaImage(photos[0]),
-    2 => Column(
-      children: [
-        Expanded(child: MediaImage(photos[0])),
-        const SizedBox(height: 2),
-        Expanded(child: MediaImage(photos[1])),
-      ],
-    ),
-    _ => Column(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(child: MediaImage(photos[0])),
-              const SizedBox(width: 2),
-              Expanded(child: MediaImage(photos[1])),
-            ],
-          ),
-        ),
-        const SizedBox(height: 2),
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(child: MediaImage(photos[2])),
-              const SizedBox(width: 2),
-              Expanded(
-                // a day's collage holds at most 4 photos, extras are dropped
-                child: photos.length > 3
-                    ? MediaImage(photos[3])
-                    : Container(color: p.panel),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  };
 
   void _openDay(DateTime day) {
     final journal = JournalScope.of(context);
@@ -202,6 +266,7 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
     final navigator = Navigator.of(context);
     showNdSheet<void>(
       context: context,
+      heightFactor: 0.85,
       builder: (sheetContext) {
         final p = sheetContext.palette;
         final entries = journal.entriesForDay(day);
@@ -209,7 +274,6 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
           ..sort((a, b) => a.at.compareTo(b.at));
         final photos = _photosFor(journal, habits, day);
         final title = '${_monthsFull[day.month - 1]} ${day.day} ${day.year}';
-        final maxHeight = MediaQuery.sizeOf(sheetContext).height * 0.85;
 
         if (entries.isEmpty && logs.isEmpty) {
           return SafeArea(
@@ -231,47 +295,41 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
 
         return SafeArea(
           top: false,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeight),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                NdSheetHeader(title: title),
-                Flexible(
-                  child: ListView(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.fromLTRB(
-                      NdSpace.page,
-                      0,
-                      NdSpace.page,
-                      NdSpace.xl,
-                    ),
-                    children: [
-                      if (photos.isNotEmpty) ...[
-                        SizedBox(
-                          height: 260,
-                          child: _DayGallery(photos: photos),
-                        ),
-                        const SizedBox(height: NdSpace.xl),
-                      ],
-                      if (entries.isNotEmpty) ...[
-                        Text('JOURNAL', style: p.h2),
-                        const SizedBox(height: NdSpace.md),
-                        for (final entry in entries)
-                          _entryRow(sheetContext, navigator, entry),
-                        const SizedBox(height: NdSpace.sm),
-                      ],
-                      if (logs.isNotEmpty) ...[
-                        Text('CHECK-INS', style: p.h2),
-                        const SizedBox(height: NdSpace.md),
-                        for (final log in logs)
-                          _logRow(sheetContext, habits, log),
-                      ],
-                    ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              NdSheetHeader(title: title),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(
+                    NdSpace.page,
+                    0,
+                    NdSpace.page,
+                    NdSpace.xl,
                   ),
+                  children: [
+                    if (photos.isNotEmpty) ...[
+                      SizedBox(height: 260, child: _DayGallery(photos: photos)),
+                      const SizedBox(height: NdSpace.xl),
+                    ],
+                    if (entries.isNotEmpty) ...[
+                      Text('JOURNAL', style: p.h2),
+                      const SizedBox(height: NdSpace.md),
+                      for (final entry in entries)
+                        _entryRow(sheetContext, navigator, entry),
+                      const SizedBox(height: NdSpace.sm),
+                    ],
+                    if (logs.isNotEmpty) ...[
+                      Text('CHECK-INS', style: p.h2),
+                      const SizedBox(height: NdSpace.md),
+                      for (final log in logs)
+                        _logRow(sheetContext, habits, log),
+                    ],
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -449,4 +507,43 @@ class _DayGalleryState extends State<_DayGallery> {
       ],
     );
   }
+}
+
+class _MonthSummary extends StatelessWidget {
+  const _MonthSummary({required this.totals});
+
+  final ({int entries, int photos, int checkIns, int days}) totals;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return NdCard(
+      radius: NdRadius.inner,
+      padding: const EdgeInsets.symmetric(vertical: NdSpace.lg),
+      child: Row(
+        children: [
+          _stat(p, '${totals.days}', 'DAYS LOGGED'),
+          _divider(p),
+          _stat(p, '${totals.entries}', 'ENTRIES'),
+          _divider(p),
+          _stat(p, '${totals.photos}', 'PHOTOS'),
+          _divider(p),
+          _stat(p, '${totals.checkIns}', 'CHECK-INS'),
+        ],
+      ),
+    );
+  }
+
+  Widget _stat(NaviPalette p, String value, String label) => Expanded(
+    child: Column(
+      children: [
+        Text(value, style: p.dot(26, color: p.text)),
+        const SizedBox(height: 3),
+        Text(label, style: p.micro, textAlign: TextAlign.center),
+      ],
+    ),
+  );
+
+  Widget _divider(NaviPalette p) =>
+      Container(width: 1, height: 30, color: p.border);
 }

@@ -312,33 +312,43 @@ class _RuleEditSheetState extends State<_RuleEditSheet> {
                     dayBits: _dayBits,
                     onChanged: (bits) => setState(() => _dayBits = bits),
                   ),
-                  const SizedBox(height: NdSpace.xxl),
-
-                  Row(
-                    children: [
-                      if (_editing)
-                        NdButton(
-                          label: 'Delete',
-                          danger: true,
-                          height: 46,
-                          onTap: _delete,
-                        ),
-                      const Spacer(),
-                      DialogAction(
-                        label: 'Cancel',
-                        onTap: () => Navigator.of(context).pop(),
-                      ),
-                      const SizedBox(width: NdSpace.xs),
-                      NdButton(
-                        label: 'Save',
-                        filled: true,
-                        height: 46,
-                        onTap: _packages.isEmpty ? null : _save,
-                      ),
-                    ],
-                  ),
                 ],
               ),
+            ),
+          ),
+          // pinned so Save stays reachable however tall the form gets
+          Container(
+            padding: const EdgeInsets.fromLTRB(
+              NdSpace.page,
+              NdSpace.md,
+              NdSpace.page,
+              NdSpace.md,
+            ),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: p.border)),
+            ),
+            child: Row(
+              children: [
+                if (_editing)
+                  NdButton(
+                    label: 'Delete',
+                    danger: true,
+                    height: 46,
+                    onTap: _delete,
+                  ),
+                const Spacer(),
+                DialogAction(
+                  label: 'Cancel',
+                  onTap: () => Navigator.of(context).pop(),
+                ),
+                const SizedBox(width: NdSpace.xs),
+                NdButton(
+                  label: 'Save',
+                  filled: true,
+                  height: 46,
+                  onTap: _packages.isEmpty ? null : _save,
+                ),
+              ],
             ),
           ),
         ],

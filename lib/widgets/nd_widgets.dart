@@ -627,10 +627,14 @@ Future<T?> showNdDialog<T>({
   );
 }
 
+/// Sheets stop well short of the top edge so the screen behind stays visible.
+/// [heightFactor] is the share of the screen the sheet may cover; the keyboard
+/// inset is added on top of it so the visible part keeps that share.
 Future<T?> showNdSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool scrollControlled = true,
+  double heightFactor = 0.7,
 }) {
   final p = context.palette;
   return showModalBottomSheet<T>(
@@ -644,12 +648,19 @@ Future<T?> showNdSheet<T>({
         top: Radius.circular(NdRadius.sheet),
       ),
     ),
-    builder: (context) => Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Builder(builder: builder),
-    ),
+    builder: (context) {
+      final media = MediaQuery.of(context);
+      final keyboard = media.viewInsets.bottom;
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: media.size.height * heightFactor + keyboard,
+        ),
+        child: Padding(
+          padding: EdgeInsets.only(bottom: keyboard),
+          child: Builder(builder: builder),
+        ),
+      );
+    },
   );
 }
 
@@ -767,40 +778,65 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(NdSpace.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (glyph != null) ...[
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: p.panel,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: p.border),
-                ),
-                child: Center(
-                  child: NdIcon(glyph!, color: p.textGhost, size: 28),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxHeight = constraints.maxHeight;
+        // short slots get tighter metrics so the action stays visible
+        final compact = maxHeight.isFinite && maxHeight < 220;
+        final pad = compact ? NdSpace.lg : NdSpace.xl;
+        final gap = compact ? NdSpace.md : NdSpace.lg;
+        final circle = compact ? 48.0 : 64.0;
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: maxHeight.isFinite ? maxHeight : 0,
+            ),
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(pad),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (glyph != null) ...[
+                      Container(
+                        width: circle,
+                        height: circle,
+                        decoration: BoxDecoration(
+                          color: p.panel,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: p.border),
+                        ),
+                        child: Center(
+                          child: NdIcon(
+                            glyph!,
+                            color: p.textGhost,
+                            size: circle * 0.44,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: gap),
+                    ],
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: p.bodyDim,
+                    ),
+                    if (actionLabel != null && onAction != null) ...[
+                      SizedBox(height: gap),
+                      NdButton(
+                        label: actionLabel!,
+                        glyph: Nd.plus,
+                        height: 44,
+                        onTap: onAction,
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: NdSpace.lg),
-            ],
-            Text(message, textAlign: TextAlign.center, style: p.bodyDim),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: NdSpace.lg),
-              NdButton(
-                label: actionLabel!,
-                glyph: Nd.plus,
-                height: 44,
-                onTap: onAction,
-              ),
-            ],
-          ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -884,6 +920,89 @@ void showNdToast(
     Duration(milliseconds: onAction == null ? 2400 : 4200),
     dismiss,
   );
+}
+
+/// Handle on a running progress overlay: push updates, then close it.
+class NdProgressHandle {
+  NdProgressHandle._(this._entry, this.progress, this.detail);
+
+  final OverlayEntry _entry;
+  final ValueNotifier<double> progress;
+  final ValueNotifier<String> detail;
+  bool _closed = false;
+
+  void update(double value, {String? detailText}) {
+    progress.value = value.clamp(0.0, 1.0);
+    if (detailText != null) detail.value = detailText;
+  }
+
+  void close() {
+    if (_closed) return;
+    _closed = true;
+    if (_entry.mounted) _entry.remove();
+    progress.dispose();
+    detail.dispose();
+  }
+}
+
+/// Blocking overlay for work the user has to wait on — importing a video,
+/// mostly. Returns a handle so the caller drives the bar.
+NdProgressHandle showNdProgress(
+  BuildContext context, {
+  required String title,
+  String detail = '',
+}) {
+  final p = context.palette;
+  final progress = ValueNotifier<double>(0);
+  final detailText = ValueNotifier<String>(detail);
+  late final OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (context) => Material(
+      color: Colors.black.withValues(alpha: 0.72),
+      child: Center(
+        child: Container(
+          width: 260,
+          padding: const EdgeInsets.all(NdSpace.xl),
+          decoration: BoxDecoration(
+            color: p.panelHi,
+            border: Border.all(color: p.border),
+            borderRadius: BorderRadius.circular(NdRadius.card),
+          ),
+          child: ValueListenableBuilder<double>(
+            valueListenable: progress,
+            builder: (context, value, _) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const NdPulseDot(size: 8),
+                    const SizedBox(width: NdSpace.sm),
+                    Text(title, style: p.h2),
+                    const Spacer(),
+                    Text(
+                      '${(value * 100).round()}%',
+                      style: p.dot(20, color: p.accent),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: NdSpace.lg),
+                NdProgressBar(value: value, segments: 20, height: 6),
+                const SizedBox(height: NdSpace.md),
+                ValueListenableBuilder<String>(
+                  valueListenable: detailText,
+                  builder: (context, text, _) =>
+                      Text(text, style: p.micro.copyWith(color: p.textGhost)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  Overlay.of(context, rootOverlay: true).insert(entry);
+  return NdProgressHandle._(entry, progress, detailText);
 }
 
 /// Slow-breathing dot. Stands in for "live" states — recording, scanning,

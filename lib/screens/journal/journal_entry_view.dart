@@ -12,6 +12,7 @@ import '../../services/media_store.dart';
 import '../../services/sfx.dart';
 import '../../theme/palette.dart';
 import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_video_player.dart';
 import '../../widgets/nd_widgets.dart';
 import '../../widgets/tactile.dart';
 
@@ -160,7 +161,6 @@ class _JournalEntryViewState extends State<JournalEntryView> {
   @override
   void dispose() {
     _textController.dispose();
-    _video?.removeListener(_onVideoTick);
     _video?.dispose();
     _posSub?.cancel();
     _durSub?.cancel();
@@ -184,29 +184,7 @@ class _JournalEntryViewState extends State<JournalEntryView> {
       if (mounted) setState(() => _mediaMissing = true);
       return;
     }
-    controller.addListener(_onVideoTick);
     if (mounted) setState(() => _videoReady = true);
-  }
-
-  void _onVideoTick() {
-    if (mounted) setState(() {});
-  }
-
-  void _toggleVideo() {
-    final video = _video;
-    if (video == null || !_videoReady) return;
-    HapticFeedback.selectionClick();
-    Sfx.tick();
-    if (video.value.isPlaying) {
-      video.pause();
-    } else {
-      // video sits at end of stream after finishing, rewind before replaying
-      if (video.value.position >= video.value.duration) {
-        video.seekTo(Duration.zero);
-      }
-      video.play();
-    }
-    setState(() {});
   }
 
   Future<void> _initAudio() async {
@@ -463,74 +441,9 @@ class _JournalEntryViewState extends State<JournalEntryView> {
         ),
       );
     }
-    final value = video.value;
-    final durMs = value.duration.inMilliseconds;
-    final posMs = value.position.inMilliseconds;
-    final ratio = value.aspectRatio <= 0 ? 16 / 9 : value.aspectRatio;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Tactile(
-          pressedScale: 0.99,
-          child: GestureDetector(
-            onTap: _toggleVideo,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(NdRadius.card),
-              child: Container(
-                color: p.panel,
-                child: AspectRatio(
-                  aspectRatio: ratio,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      VideoPlayer(video),
-                      AnimatedOpacity(
-                        opacity: value.isPlaying ? 0 : 1,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOut,
-                        child: Container(
-                          color: Colors.black.withValues(alpha: 0.4),
-                          child: Center(
-                            child: Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                color: p.accent,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: NdIcon(
-                                  Nd.play,
-                                  color: p.onAccent,
-                                  size: 30,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: NdSpace.lg),
-        NdProgressBar(
-          value: durMs == 0 ? 0 : posMs / durMs,
-          segments: 28,
-          height: 6,
-        ),
-        const SizedBox(height: NdSpace.sm),
-        Row(
-          children: [
-            Text(journalDuration(posMs), style: p.dot(16, color: p.textDim)),
-            const Spacer(),
-            Text(journalDuration(durMs), style: p.dot(16, color: p.textDim)),
-          ],
-        ),
-      ],
+    return NdVideoPlayer(
+      controller: video,
+      borderRadius: BorderRadius.circular(NdRadius.card),
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -138,26 +140,40 @@ class _NavCapsule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: NdSpace.xs),
-      decoration: BoxDecoration(
-        color: p.panelHi,
-        border: Border.all(color: p.border),
-        borderRadius: BorderRadius.circular(NdRadius.pill),
-      ),
-      child: Row(
-        children: [
-          for (final (i, tab) in tabs.indexed)
-            Expanded(
-              child: _NavItem(
-                glyph: tab.$1,
-                label: tab.$2,
-                selected: i == index,
-                onTap: () => onTap(i),
-              ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(NdRadius.pill),
+      child: BackdropFilter(
+        // whatever scrolls under the bar stays readable as a soft wash
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          height: 62,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                p.panelHi.withValues(alpha: 0.72),
+                p.panel.withValues(alpha: 0.58),
+              ],
             ),
-        ],
+            border: Border.all(color: p.border.withValues(alpha: 0.8)),
+            borderRadius: BorderRadius.circular(NdRadius.pill),
+          ),
+          child: Row(
+            children: [
+              for (final (i, tab) in tabs.indexed)
+                Expanded(
+                  child: _NavItem(
+                    glyph: tab.$1,
+                    label: tab.$2,
+                    selected: i == index,
+                    onTap: () => onTap(i),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -189,37 +205,26 @@ class _NavItem extends StatelessWidget {
           selected: selected,
           button: true,
           label: label,
-          child: Center(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(
-                horizontal: NdSpace.md,
-                vertical: 5,
-              ),
-              decoration: BoxDecoration(
-                color: selected ? p.accent : Colors.transparent,
-                borderRadius: BorderRadius.circular(NdRadius.pill),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  NdIcon(glyph, color: color, size: 22),
-                  const SizedBox(height: 3),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: TextStyle(
-                      fontFamily: kFontUI,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
-                      color: color,
-                      height: 1.1,
-                    ),
+          child: Tooltip(
+            message: label,
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: selected ? p.accent : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: AnimatedScale(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutBack,
+                    scale: selected ? 1.08 : 1,
+                    child: NdIcon(glyph, color: color, size: 23),
                   ),
-                ],
+                ),
               ),
             ),
           ),

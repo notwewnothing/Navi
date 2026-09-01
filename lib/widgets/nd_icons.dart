@@ -31,6 +31,14 @@ abstract final class Nd {
   static const pause = NdGlyph(Icons.pause_rounded);
   static const stop = NdGlyph(Icons.stop_rounded);
   static const forward = NdGlyph(Icons.fast_forward_rounded);
+  static const replay = NdGlyph(Icons.replay_rounded);
+  static const skipBack = NdGlyph(Icons.replay_10_rounded);
+  static const skipForward = NdGlyph(Icons.forward_10_rounded);
+  static const volumeOn = NdGlyph(Icons.volume_up_rounded);
+  static const volumeOff = NdGlyph(Icons.volume_off_rounded);
+  static const expand = NdGlyph(Icons.open_in_full_rounded);
+  static const collapse = NdGlyph(Icons.close_fullscreen_rounded);
+  static const speed = NdGlyph(Icons.speed_rounded);
 
   static const bell = NdGlyph(Icons.notifications_none_rounded);
   static const lock = NdGlyph(Icons.lock_outline_rounded);

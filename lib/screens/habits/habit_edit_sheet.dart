@@ -327,17 +327,26 @@ class _HabitEditSheetState extends State<_HabitEditSheet> {
                       ],
                     ],
                   ),
-                  const SizedBox(height: NdSpace.xl),
-                  NdButton(
-                    label: widget.habit == null
-                        ? 'Create habit'
-                        : 'Save changes',
-                    filled: true,
-                    expand: true,
-                    onTap: canSave ? _save : null,
-                  ),
                 ],
               ),
+            ),
+          ),
+          // pinned so Save stays reachable however tall the form gets
+          Container(
+            padding: const EdgeInsets.fromLTRB(
+              NdSpace.page,
+              NdSpace.md,
+              NdSpace.page,
+              NdSpace.md,
+            ),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: p.border)),
+            ),
+            child: NdButton(
+              label: widget.habit == null ? 'Create habit' : 'Save changes',
+              filled: true,
+              expand: true,
+              onTap: canSave ? _save : null,
             ),
           ),
         ],
