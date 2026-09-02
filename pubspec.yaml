@@ -23,6 +23,8 @@ dependencies:
   audioplayers: ^6.5.1
   video_player: ^2.10.0
   path_provider: ^2.1.5
+  archive: ^4.2.0
+  file_picker: ^12.1.3
 
 # path_provider_android >=2.3.0 pulls the jni package, whose android
 # build.gradle uses the legacy kotlin() DSL and fails under this Gradle.

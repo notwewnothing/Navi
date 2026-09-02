@@ -1,8 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/widgets.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/palette.dart';
@@ -131,27 +129,6 @@ class SettingsStore extends ChangeNotifier {
     _sfxEnabled = value;
     await _save();
     notifyListeners();
-  }
-
-  Future<String> exportData(Map<String, String> sections) async {
-    final docs = await getApplicationDocumentsDirectory();
-    final stamp = DateTime.now().millisecondsSinceEpoch;
-    final file = File('${docs.path}/navi_export_$stamp.json');
-    final payload = <String, Object?>{
-      'exportedAt': DateTime.now().toIso8601String(),
-      'app': 'NAVI v1.0',
-    };
-    sections.forEach((name, json) {
-      try {
-        payload[name] = jsonDecode(json);
-      } catch (_) {
-        payload[name] = json;
-      }
-    });
-    await file.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(payload),
-    );
-    return file.path;
   }
 
   Future<void> _save() async {

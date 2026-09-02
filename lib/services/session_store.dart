@@ -127,6 +127,18 @@ class SessionStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> importJson(String raw) async {
+    final data = (jsonDecode(raw) as Map).cast<String, Object?>();
+    _days.clear();
+    (data['days'] as Map? ?? {}).forEach((key, value) {
+      _days[key as String] = DayStats.fromJson(
+        (value as Map).cast<String, Object?>(),
+      );
+    });
+    await _save();
+    notifyListeners();
+  }
+
   String exportJson() => jsonEncode({
     'days': _days.map((key, value) => MapEntry(key, value.toJson())),
   });

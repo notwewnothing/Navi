@@ -238,6 +238,35 @@ class HabitStore extends ChangeNotifier {
     await notifications?.syncHabits(enabledHabits, enabled: _remindersEnabled);
   }
 
+  Future<void> importJson(String raw) async {
+    final data = (jsonDecode(raw) as Map).cast<String, Object?>();
+    _habits
+      ..clear()
+      ..addAll(
+        (data['habits'] as List? ?? []).map(
+          (e) => Habit.fromJson((e as Map).cast<String, Object?>()),
+        ),
+      );
+    _logs
+      ..clear()
+      ..addAll(
+        (data['logs'] as List? ?? []).map(
+          (e) => HabitLog.fromJson((e as Map).cast<String, Object?>()),
+        ),
+      );
+    _nextId = 1;
+    for (final h in _habits) {
+      if (h.id >= _nextId) _nextId = h.id + 1;
+    }
+    for (final l in _logs) {
+      if (l.id >= _nextId) _nextId = l.id + 1;
+    }
+    _reindex();
+    await _save();
+    await _syncReminders();
+    notifyListeners();
+  }
+
   String exportJson() => jsonEncode({
     'habits': [for (final h in _habits) h.toJson()],
     'logs': [for (final l in _logs) l.toJson()],

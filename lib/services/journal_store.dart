@@ -15,6 +15,7 @@ class JournalStore extends ChangeNotifier {
   final DateTime Function() _clock;
 
   final List<JournalEntry> _entries = [];
+  final Map<String, List<JournalEntry>> _byDay = {};
   SharedPreferences? _prefs;
   int _nextId = 1;
   bool _loaded = false;
@@ -40,11 +41,19 @@ class JournalStore extends ChangeNotifier {
       }
     } catch (_) {}
     _sort();
+    _reindex();
     _loaded = true;
     notifyListeners();
   }
 
   void _sort() => _entries.sort((a, b) => b.at.compareTo(a.at));
+
+  void _reindex() {
+    _byDay.clear();
+    for (final entry in _entries) {
+      (_byDay[dayKeyOf(entry.at)] ??= []).add(entry);
+    }
+  }
 
   Future<JournalEntry> add({
     required JournalType type,
@@ -62,6 +71,7 @@ class JournalStore extends ChangeNotifier {
     );
     _entries.insert(0, entry);
     _sort();
+    _reindex();
     await _save();
     notifyListeners();
     return entry;
@@ -75,30 +85,39 @@ class JournalStore extends ChangeNotifier {
   Future<void> remove(JournalEntry entry) async {
     await MediaStore.delete(entry.mediaPath);
     _entries.remove(entry);
+    _reindex();
     await _save();
     notifyListeners();
   }
 
-  List<JournalEntry> entriesForDay(DateTime day) {
-    final key = dayKeyOf(day);
-    return List.unmodifiable(_entries.where((e) => dayKeyOf(e.at) == key));
-  }
+  List<JournalEntry> entriesForDay(DateTime day) =>
+      List.unmodifiable(_byDay[dayKeyOf(day)] ?? const <JournalEntry>[]);
 
-  bool hasEntryOn(DateTime day) {
-    final key = dayKeyOf(day);
-    return _entries.any((e) => dayKeyOf(e.at) == key);
-  }
+  bool hasEntryOn(DateTime day) => _byDay.containsKey(dayKeyOf(day));
 
-  List<JournalEntry> photoEntriesForDay(DateTime day) {
-    final key = dayKeyOf(day);
-    return List.unmodifiable(
-      _entries.where(
-        (e) =>
-            dayKeyOf(e.at) == key &&
-            e.type == JournalType.photo &&
-            e.mediaPath != null,
-      ),
-    );
+  List<JournalEntry> photoEntriesForDay(DateTime day) => List.unmodifiable(
+    (_byDay[dayKeyOf(day)] ?? const <JournalEntry>[]).where(
+      (e) => e.type == JournalType.photo && e.mediaPath != null,
+    ),
+  );
+
+  Future<void> importJson(String raw) async {
+    final data = (jsonDecode(raw) as Map).cast<String, Object?>();
+    _entries
+      ..clear()
+      ..addAll(
+        (data['entries'] as List? ?? []).map(
+          (e) => JournalEntry.fromJson((e as Map).cast<String, Object?>()),
+        ),
+      );
+    _nextId = 1;
+    for (final e in _entries) {
+      if (e.id >= _nextId) _nextId = e.id + 1;
+    }
+    _sort();
+    _reindex();
+    await _save();
+    notifyListeners();
   }
 
   String exportJson() => jsonEncode({

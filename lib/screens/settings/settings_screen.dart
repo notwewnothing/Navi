@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:file_picker/file_picker.dart';
+
 import '../../services/app_blocker.dart';
+import '../../services/backup_service.dart';
 import '../../services/block_store.dart';
 import '../../services/device_admin_service.dart';
 import '../../services/habit_store.dart';
@@ -192,8 +195,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     minuteCtrl.dispose();
   }
 
-  Future<void> _exportData() async {
-    final settings = SettingsScope.of(context);
+  Future<void> _exportBackup() async {
     final sections = <String, String>{
       'settings-note':
           'Settings live on-device only. Everything else is below.',
@@ -204,14 +206,99 @@ class _SettingsScreenState extends State<SettingsScreen>
       'sessions': SessionScope.of(context).exportJson(),
     };
     try {
-      final path = await settings.exportData(sections);
-      if (!mounted) return;
+      final bytes = await BackupService.buildZip(sections);
+      final saved = await FilePicker.saveFile(
+        dialogTitle: 'Save NAVI backup',
+        fileName: BackupService.fileName(DateTime.now()),
+        mimeType: 'application/zip',
+        type: FileType.custom,
+        allowedExtensions: const ['zip'],
+        bytes: bytes,
+      );
+      if (!mounted || saved == null) return;
       Sfx.complete();
-      final short = path.split('/').last;
-      showNdToast(context, 'Exported to $short', glyph: Nd.export);
+      showNdToast(context, 'Backup saved', glyph: Nd.export);
     } catch (_) {
       if (!mounted) return;
       showNdToast(context, 'Export failed', glyph: Nd.x);
+    }
+  }
+
+  Future<void> _importBackup() async {
+    final habits = HabitScope.of(context);
+    final journal = JournalScope.of(context);
+    final schedule = ScheduleScope.of(context);
+    final blocker = BlockScope.of(context);
+    final sessions = SessionScope.of(context);
+
+    final Uint8List bytes;
+    try {
+      final picked = await FilePicker.pickFile(
+        dialogTitle: 'Choose a NAVI backup',
+        type: FileType.custom,
+        allowedExtensions: const ['zip'],
+      );
+      if (picked == null) return;
+      bytes = await picked.readAsBytes();
+    } catch (_) {
+      if (!mounted) return;
+      showNdToast(context, 'Could not open the file picker', glyph: Nd.x);
+      return;
+    }
+    if (!mounted) return;
+
+    final BackupManifest manifest;
+    try {
+      manifest = BackupService.readManifest(bytes);
+    } on FormatException catch (e) {
+      if (!mounted) return;
+      showNdToast(context, e.message, glyph: Nd.x);
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      showNdToast(context, 'Could not read that file', glyph: Nd.x);
+      return;
+    }
+
+    final confirmed = await showNdDialog<bool>(
+      context: context,
+      title: 'Replace everything?',
+      builder: (context) => Text(
+        'Importing replaces your habits, journal, schedule, block rules and '
+        'session history with the contents of this backup. What is on the '
+        'device now cannot be recovered afterwards.',
+        style: context.palette.bodyDim,
+      ),
+      actions: (context) => [
+        DialogAction(label: 'Cancel', onTap: () => Navigator.pop(context, false)),
+        DialogAction(
+          label: 'Replace',
+          danger: true,
+          onTap: () => Navigator.pop(context, true),
+        ),
+      ],
+    );
+    if (confirmed != true) return;
+
+    try {
+      await BackupService.restoreMedia(bytes);
+      final sections = manifest.sections;
+      final habitsJson = sections['habits'];
+      final journalJson = sections['journal'];
+      final scheduleJson = sections['schedule'];
+      final blockerJson = sections['blocker'];
+      final sessionsJson = sections['sessions'];
+      if (habitsJson != null) await habits.importJson(habitsJson);
+      if (journalJson != null) await journal.importJson(journalJson);
+      if (scheduleJson != null) await schedule.importJson(scheduleJson);
+      if (blockerJson != null) await blocker.importJson(blockerJson);
+      if (sessionsJson != null) await sessions.importJson(sessionsJson);
+      if (!mounted) return;
+      Sfx.complete();
+      showNdToast(context, 'Backup restored', glyph: Nd.check);
+    } catch (_) {
+      if (!mounted) return;
+      showNdToast(context, 'Import failed', glyph: Nd.x);
     }
   }
 
@@ -342,10 +429,17 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           _SettingsRow(
             glyph: Nd.export,
-            label: 'Export data',
-            subtitle: 'Writes a JSON file to app storage',
+            label: 'Export backup',
+            subtitle: 'Zip of your data and media, saved where you choose',
             chevron: true,
-            onTap: _exportData,
+            onTap: _exportBackup,
+          ),
+          _SettingsRow(
+            glyph: Nd.replay,
+            label: 'Import backup',
+            subtitle: 'Replaces everything on this device',
+            chevron: true,
+            onTap: _importBackup,
           ),
         ],
       ),

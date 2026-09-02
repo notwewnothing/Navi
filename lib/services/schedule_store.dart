@@ -148,6 +148,24 @@ class ScheduleStore extends ChangeNotifier {
     await store.syncScheduleAlarms(desired);
   }
 
+  Future<void> importJson(String raw) async {
+    final data = (jsonDecode(raw) as Map).cast<String, Object?>();
+    _events
+      ..clear()
+      ..addAll(
+        (data['events'] as List? ?? []).map(
+          (e) => ScheduleEvent.fromJson((e as Map).cast<String, Object?>()),
+        ),
+      );
+    _nextId = 1;
+    for (final e in _events) {
+      if (e.id >= _nextId) _nextId = e.id + 1;
+    }
+    await _save();
+    await _syncAlarms();
+    notifyListeners();
+  }
+
   String exportJson() => jsonEncode({
     'events': [for (final e in _events) e.toJson()],
   });

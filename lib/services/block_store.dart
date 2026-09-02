@@ -133,6 +133,27 @@ class BlockStore extends ChangeNotifier {
     await AppBlocker.setBlockRules(encoded);
   }
 
+  Future<void> importJson(String raw) async {
+    final data = (jsonDecode(raw) as Map).cast<String, Object?>();
+    _rules
+      ..clear()
+      ..addAll(
+        (data['rules'] as List? ?? []).map(
+          (e) => BlockRule.fromJson((e as Map).cast<String, Object?>()),
+        ),
+      );
+    _sleepBlockEnabled = data['sleepBlockEnabled'] as bool? ?? false;
+    _sleepPackages = [
+      for (final p in (data['sleepPackages'] as List? ?? [])) p as String,
+    ];
+    _nextId = 1;
+    for (final r in _rules) {
+      if (r.id >= _nextId) _nextId = r.id + 1;
+    }
+    await _save();
+    notifyListeners();
+  }
+
   String exportJson() => jsonEncode({
     'rules': [for (final r in _rules) r.toJson()],
     'sleepBlockEnabled': _sleepBlockEnabled,
