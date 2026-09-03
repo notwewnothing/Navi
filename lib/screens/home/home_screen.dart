@@ -58,9 +58,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final allDone = await habits.checkIn(habit);
     if (!mounted) return;
     Sfx.complete();
-    if (allDone) {
-      showNdToast(context, 'Every habit done today', glyph: Nd.check);
-    }
+    showNdToast(
+      context,
+      allDone ? 'Every habit done today' : 'Checked in "${habit.name}"',
+      glyph: Nd.check,
+      actionLabel: 'Undo',
+      onAction: () => habits.uncheck(habit),
+    );
   }
 
   Future<void> _showQuickAdd() async {

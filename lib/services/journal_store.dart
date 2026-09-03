@@ -82,13 +82,26 @@ class JournalStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> remove(JournalEntry entry) async {
-    await MediaStore.delete(entry.mediaPath);
+  Future<void> remove(JournalEntry entry, {bool keepMedia = false}) async {
+    if (!keepMedia) await MediaStore.delete(entry.mediaPath);
     _entries.remove(entry);
     _reindex();
     await _save();
     notifyListeners();
   }
+
+  Future<void> restore(JournalEntry entry) async {
+    if (_entries.any((e) => e.id == entry.id)) return;
+    _entries.add(entry);
+    if (entry.id >= _nextId) _nextId = entry.id + 1;
+    _sort();
+    _reindex();
+    await _save();
+    notifyListeners();
+  }
+
+  Future<void> purgeMedia(JournalEntry entry) =>
+      MediaStore.delete(entry.mediaPath);
 
   List<JournalEntry> entriesForDay(DateTime day) =>
       List.unmodifiable(_byDay[dayKeyOf(day)] ?? const <JournalEntry>[]);

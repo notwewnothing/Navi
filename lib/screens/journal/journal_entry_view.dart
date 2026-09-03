@@ -253,35 +253,23 @@ class _JournalEntryViewState extends State<JournalEntryView> {
     showNdToast(context, 'Entry updated', glyph: Nd.check);
   }
 
-  void _confirmDelete() {
-    final p = context.palette;
+  Future<void> _deleteWithUndo() async {
     final journal = JournalScope.of(context);
     final navigator = Navigator.of(context);
-    showNdDialog<void>(
-      context: context,
-      title: 'Delete this entry?',
-      builder: (_) => Text(
-        'The entry and any photo, video or recording attached to it are '
-        'removed for good.',
-        style: p.bodyDim,
-      ),
-      actions: (dialogContext) => [
-        DialogAction(
-          label: 'Cancel',
-          onTap: () => Navigator.pop(dialogContext),
-        ),
-        DialogAction(
-          label: 'Delete',
-          danger: true,
-          onTap: () async {
-            Navigator.pop(dialogContext);
-            HapticFeedback.heavyImpact();
-            await journal.remove(widget.entry);
-            Sfx.tick();
-            navigator.pop();
-          },
-        ),
-      ],
+    final host = navigator.context;
+    final entry = widget.entry;
+    HapticFeedback.heavyImpact();
+    Sfx.tick();
+    await journal.remove(entry, keepMedia: true);
+    if (!host.mounted) return;
+    navigator.pop();
+    showNdToast(
+      host,
+      'Entry deleted',
+      glyph: Nd.trash,
+      actionLabel: 'Undo',
+      onAction: () => journal.restore(entry),
+      onExpire: () => journal.purgeMedia(entry),
     );
   }
 
@@ -338,7 +326,7 @@ class _JournalEntryViewState extends State<JournalEntryView> {
                   DialogAction(
                     label: 'Delete',
                     danger: true,
-                    onTap: _confirmDelete,
+                    onTap: _deleteWithUndo,
                   ),
                 ],
               ),

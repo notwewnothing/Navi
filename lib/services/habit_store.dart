@@ -109,17 +109,41 @@ class HabitStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> removeHabit(Habit habit) async {
+  Future<List<HabitLog>> removeHabit(
+    Habit habit, {
+    bool keepMedia = false,
+  }) async {
     _habits.remove(habit);
     final orphaned = _logs.where((l) => l.habitId == habit.id).toList();
     for (final log in orphaned) {
-      await MediaStore.delete(log.photoPath);
+      if (!keepMedia) await MediaStore.delete(log.photoPath);
       _logs.remove(log);
     }
     _reindex();
     await _save();
     await _syncReminders();
     notifyListeners();
+    return orphaned;
+  }
+
+  Future<void> restoreHabit(Habit habit, List<HabitLog> logs) async {
+    if (_habits.any((h) => h.id == habit.id)) return;
+    _habits.add(habit);
+    for (final log in logs) {
+      if (!_logs.any((l) => l.id == log.id)) _logs.add(log);
+      if (log.id >= _nextId) _nextId = log.id + 1;
+    }
+    if (habit.id >= _nextId) _nextId = habit.id + 1;
+    _reindex();
+    await _save();
+    await _syncReminders();
+    notifyListeners();
+  }
+
+  Future<void> purgeLogMedia(List<HabitLog> logs) async {
+    for (final log in logs) {
+      await MediaStore.delete(log.photoPath);
+    }
   }
 
   Habit? habitById(int id) {

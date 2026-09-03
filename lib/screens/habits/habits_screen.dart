@@ -67,26 +67,6 @@ class _HabitRow extends StatelessWidget {
 
   final Habit habit;
 
-  Future<bool> _confirmDelete(BuildContext context) async {
-    final confirmed = await showNdDialog<bool>(
-      context: context,
-      title: 'Delete "${habit.name}"?',
-      builder: (context) => Text(
-        'Its full check-in history goes with it. This cannot be undone.',
-        style: context.palette.bodyDim,
-      ),
-      actions: (context) => [
-        DialogAction(label: 'Keep', onTap: () => Navigator.pop(context, false)),
-        DialogAction(
-          label: 'Delete',
-          danger: true,
-          onTap: () => Navigator.pop(context, true),
-        ),
-      ],
-    );
-    return confirmed ?? false;
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
@@ -105,14 +85,19 @@ class _HabitRow extends StatelessWidget {
         padding: const EdgeInsets.only(right: NdSpace.xl),
         child: const NdIcon(Nd.trash, color: Colors.white, size: 22),
       ),
-      confirmDismiss: (_) {
+      onDismissed: (_) async {
         HapticFeedback.mediumImpact();
-        return _confirmDelete(context);
-      },
-      onDismissed: (_) {
         Sfx.tick();
-        store.removeHabit(habit);
-        showNdToast(context, 'Habit deleted', glyph: Nd.trash);
+        final logs = await store.removeHabit(habit, keepMedia: true);
+        if (!context.mounted) return;
+        showNdToast(
+          context,
+          'Deleted "${habit.name}"',
+          glyph: Nd.trash,
+          actionLabel: 'Undo',
+          onAction: () => store.restoreHabit(habit, logs),
+          onExpire: () => store.purgeLogMedia(logs),
+        );
       },
       child: NdCard(
         padding: const EdgeInsets.all(NdSpace.lg),

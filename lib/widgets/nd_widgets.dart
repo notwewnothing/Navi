@@ -848,15 +848,18 @@ void showNdToast(
   NdGlyph? glyph,
   String? actionLabel,
   VoidCallback? onAction,
+  VoidCallback? onExpire,
 }) {
   final p = context.palette;
   final overlay = Overlay.of(context, rootOverlay: true);
   late final OverlayEntry entry;
   var dismissed = false;
+  var actioned = false;
   void dismiss() {
     if (dismissed) return;
     dismissed = true;
     if (entry.mounted) entry.remove();
+    if (!actioned) onExpire?.call();
   }
 
   entry = OverlayEntry(
@@ -903,6 +906,7 @@ void showNdToast(
                     label: actionLabel,
                     emphasized: true,
                     onTap: () {
+                      actioned = true;
                       dismiss();
                       onAction();
                     },
