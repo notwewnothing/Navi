@@ -64,6 +64,9 @@ void main() {
     }
     await pumpAt(tester, harness(habits, SettingsStore()));
     expect(tester.takeException(), isNull);
+    // the second card row sits below the fold, so scroll it into the viewport
+    await tester.drag(find.byType(ListView), const Offset(0, -600));
+    await tester.pump();
     expect(find.text('Habit 3'), findsOneWidget);
     expect(find.text('Habit 4'), findsNothing);
     await teardown(tester);

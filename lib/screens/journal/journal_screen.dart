@@ -11,25 +11,63 @@ import 'journal_calendar_screen.dart';
 import 'journal_entry_editor.dart';
 import 'journal_entry_view.dart';
 
-class JournalScreen extends StatelessWidget {
+class JournalScreen extends StatefulWidget {
   const JournalScreen({super.key});
+
+  @override
+  State<JournalScreen> createState() => _JournalScreenState();
+}
+
+class _JournalScreenState extends State<JournalScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+  JournalType? _type;
+  bool _searching = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _searching = !_searching;
+      if (!_searching) {
+        _searchController.clear();
+        _query = '';
+      }
+    });
+  }
+
+  String _subtitle(int shown, int total) {
+    if (_query.isEmpty && _type == null) {
+      return total == 1 ? '1 entry' : '$total entries';
+    }
+    if (shown == 0) return 'No matches';
+    return shown == 1 ? '1 match' : '$shown matches';
+  }
 
   @override
   Widget build(BuildContext context) {
     final journal = JournalScope.of(context);
-    final entries = journal.entries;
+    final total = journal.entries.length;
+    final entries = journal.search(query: _query, type: _type);
+    final filtering = _query.isNotEmpty || _type != null;
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
             NdHeader(
               title: 'Journal',
-              subtitle: entries.isEmpty
-                  ? null
-                  : entries.length == 1
-                  ? '1 entry'
-                  : '${entries.length} entries',
+              subtitle: total == 0 ? null : _subtitle(entries.length, total),
               actions: [
+                NdIconButton(
+                  glyph: Nd.search,
+                  tooltip: _searching ? 'Close search' : 'Search',
+                  onTap: _toggleSearch,
+                ),
                 NdIconButton(
                   glyph: Nd.calendar,
                   tooltip: 'Calendar view',
@@ -39,14 +77,64 @@ class JournalScreen extends StatelessWidget {
                 ),
               ],
             ),
+            if (_searching)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  NdSpace.page,
+                  0,
+                  NdSpace.page,
+                  NdSpace.md,
+                ),
+                child: NdTextField(
+                  controller: _searchController,
+                  hint: 'Search your entries',
+                  autofocus: true,
+                  capitalization: TextCapitalization.none,
+                  onChanged: (v) => setState(() => _query = v),
+                ),
+              ),
+            if (_searching || _type != null)
+              SizedBox(
+                height: 40,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: NdSpace.page,
+                  ),
+                  children: [
+                    NdChip(
+                      label: 'All',
+                      selected: _type == null,
+                      onTap: () => setState(() => _type = null),
+                    ),
+                    for (final type in JournalType.values) ...[
+                      const SizedBox(width: NdSpace.sm),
+                      NdChip(
+                        label: type.label,
+                        selected: _type == type,
+                        onTap: () => setState(
+                          () => _type = _type == type ? null : type,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             Expanded(
-              child: entries.isEmpty
+              child: total == 0
                   ? EmptyState(
                       message:
                           'Nothing written yet.\nText, photo, video or voice — all work.',
                       glyph: Nd.book,
                       actionLabel: 'New entry',
                       onAction: () => showJournalEntrySheet(context),
+                    )
+                  : entries.isEmpty
+                  ? EmptyState(
+                      message: filtering
+                          ? 'Nothing matches that.'
+                          : 'Nothing written yet.',
+                      glyph: Nd.book,
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(

@@ -9,6 +9,7 @@ class NdGlyph {
 }
 
 abstract final class Nd {
+  static const search = NdGlyph(Icons.search);
   static const home = NdGlyph(Icons.home_outlined);
   static const grid = NdGlyph(Icons.grid_view_outlined);
   static const book = NdGlyph(Icons.menu_book_outlined);

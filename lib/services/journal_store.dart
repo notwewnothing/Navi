@@ -133,6 +133,39 @@ class JournalStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<JournalEntry> search({String query = '', JournalType? type}) {
+    final q = query.trim().toLowerCase();
+    return List.unmodifiable(
+      _entries.where((e) {
+        if (type != null && e.type != type) return false;
+        if (q.isEmpty) return true;
+        return e.body.toLowerCase().contains(q);
+      }),
+    );
+  }
+
+  Map<String, int> entryCountsByDay(int year) {
+    final counts = <String, int>{};
+    for (final key in _byDay.keys) {
+      if (!key.startsWith('$year-')) continue;
+      counts[key] = _byDay[key]!.length;
+    }
+    return counts;
+  }
+
+  Map<int, int> entryCountsByMonth(int year) {
+    final counts = <int, int>{};
+    for (final entry in _entries) {
+      if (entry.at.year != year) continue;
+      counts[entry.at.month] = (counts[entry.at.month] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  int get earliestYear => _entries.isEmpty
+      ? DateTime.now().year
+      : _entries.map((e) => e.at.year).reduce((a, b) => a < b ? a : b);
+
   String exportJson() => jsonEncode({
     'entries': [for (final e in _entries) e.toJson()],
   });

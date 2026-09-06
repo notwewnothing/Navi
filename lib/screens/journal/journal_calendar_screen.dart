@@ -10,6 +10,7 @@ import '../../widgets/month_grid.dart';
 import '../../widgets/nd_icons.dart';
 import '../../widgets/nd_widgets.dart';
 import '../../widgets/routes.dart';
+import '../../widgets/tactile.dart';
 import 'journal_entry_view.dart';
 
 const _monthsFull = [
@@ -37,6 +38,8 @@ class JournalCalendarScreen extends StatefulWidget {
 }
 
 class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
+  bool _yearView = false;
+
   late DateTime _month = DateTime(
     (widget.initialMonth ?? DateTime.now()).year,
     (widget.initialMonth ?? DateTime.now()).month,
@@ -95,14 +98,36 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
           children: [
             NdHeader(
               title: 'Archive',
-              subtitle: 'Tap a day to see what you logged',
+              subtitle: _yearView
+                  ? 'Tap a month to open it'
+                  : 'Tap a day to see what you logged',
               leading: NdIconButton(
                 glyph: Nd.left,
                 onTap: () => Navigator.pop(context),
               ),
+              actions: [
+                NdIconButton(
+                  glyph: _yearView ? Nd.calendar : Nd.grid,
+                  tooltip: _yearView ? 'Month view' : 'Year view',
+                  onTap: () => setState(() => _yearView = !_yearView),
+                ),
+              ],
             ),
             Expanded(
-              child: ListView(
+              child: _yearView
+                  ? _YearGrid(
+                      year: _month.year,
+                      counts: journal.entryCountsByMonth(_month.year),
+                      dayCounts: journal.entryCountsByDay(_month.year),
+                      earliestYear: journal.earliestYear,
+                      onPickMonth: (m) => setState(() {
+                        _month = DateTime(_month.year, m);
+                        _yearView = false;
+                      }),
+                      onYearChanged: (y) =>
+                          setState(() => _month = DateTime(y, _month.month)),
+                    )
+                  : ListView(
                 padding: const EdgeInsets.fromLTRB(
                   NdSpace.lg,
                   NdSpace.xs,
@@ -546,4 +571,191 @@ class _MonthSummary extends StatelessWidget {
 
   Widget _divider(NaviPalette p) =>
       Container(width: 1, height: 30, color: p.border);
+}
+
+class _YearGrid extends StatelessWidget {
+  const _YearGrid({
+    required this.year,
+    required this.counts,
+    required this.dayCounts,
+    required this.earliestYear,
+    required this.onPickMonth,
+    required this.onYearChanged,
+  });
+
+  final int year;
+  final Map<int, int> counts;
+  final Map<String, int> dayCounts;
+  final int earliestYear;
+  final ValueChanged<int> onPickMonth;
+  final ValueChanged<int> onYearChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final now = DateTime.now();
+    final busiestDay = dayCounts.values.fold(0, (a, b) => a > b ? a : b);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        NdSpace.lg,
+        NdSpace.xs,
+        NdSpace.lg,
+        NdSpace.xl,
+      ),
+      children: [
+        Row(
+          children: [
+            Opacity(
+              opacity: year > earliestYear ? 1 : 0.3,
+              child: NdIconButton(
+                glyph: Nd.left,
+                onTap: () {
+                  if (year <= earliestYear) return;
+                  Sfx.tick();
+                  onYearChanged(year - 1);
+                },
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Text('$year', style: p.dot(30, letterSpacing: 3)),
+              ),
+            ),
+            Opacity(
+              opacity: year < now.year ? 1 : 0.3,
+              child: NdIconButton(
+                glyph: Nd.right,
+                onTap: () {
+                  if (year >= now.year) return;
+                  Sfx.tick();
+                  onYearChanged(year + 1);
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: NdSpace.lg),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 3,
+          crossAxisSpacing: NdSpace.md,
+          mainAxisSpacing: NdSpace.md,
+          childAspectRatio: 0.82,
+          children: [
+            for (var m = 1; m <= 12; m++)
+              _MiniMonth(
+                year: year,
+                month: m,
+                count: counts[m] ?? 0,
+                dayCounts: dayCounts,
+                busiestDay: busiestDay,
+                isCurrent: year == now.year && m == now.month,
+                onTap: () {
+                  Sfx.tick();
+                  onPickMonth(m);
+                },
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniMonth extends StatelessWidget {
+  const _MiniMonth({
+    required this.year,
+    required this.month,
+    required this.count,
+    required this.dayCounts,
+    required this.busiestDay,
+    required this.isCurrent,
+    required this.onTap,
+  });
+
+  final int year;
+  final int month;
+  final int count;
+  final Map<String, int> dayCounts;
+  final int busiestDay;
+  final bool isCurrent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final days = DateTime(year, month + 1, 0).day;
+    final leading = DateTime(year, month, 1).weekday - 1;
+
+    return Tactile(
+      pressedScale: 0.94,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(NdSpace.sm),
+          decoration: BoxDecoration(
+            color: count > 0 ? p.panelHi : p.panel,
+            border: Border.all(
+              color: isCurrent ? p.accent : p.border,
+              width: isCurrent ? 1.5 : 1,
+            ),
+            borderRadius: BorderRadius.circular(NdRadius.inner),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _monthsFull[month - 1].substring(0, 3).toUpperCase(),
+                style: p.micro.copyWith(
+                  color: count > 0 ? p.text : p.textGhost,
+                ),
+              ),
+              const SizedBox(height: NdSpace.xs),
+              Expanded(
+                child: GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 7,
+                  crossAxisSpacing: 1.5,
+                  mainAxisSpacing: 1.5,
+                  children: [
+                    for (var i = 0; i < leading; i++) const SizedBox.shrink(),
+                    for (var d = 1; d <= days; d++)
+                      Builder(
+                        builder: (context) {
+                          final onDay =
+                              dayCounts[dayKeyOf(DateTime(year, month, d))] ??
+                              0;
+                          final intensity = busiestDay == 0
+                              ? 0.0
+                              : onDay / busiestDay;
+                          return DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: onDay == 0
+                                  ? p.border.withValues(alpha: 0.35)
+                                  : p.accent.withValues(
+                                      alpha: 0.3 + 0.7 * intensity,
+                                    ),
+                              borderRadius: BorderRadius.circular(1.5),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: NdSpace.xs),
+              Text(
+                count == 0 ? '—' : '$count',
+                style: p.micro.copyWith(
+                  color: count > 0 ? p.accent : p.textGhost,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
