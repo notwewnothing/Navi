@@ -96,6 +96,21 @@ class AlarmStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> reload() async {
+    try {
+      await _prefs?.reload();
+      final raw = _prefs?.getString(_prefsKey);
+      if (raw == null) return;
+      final list = jsonDecode(raw) as List<dynamic>;
+      _alarms
+        ..clear()
+        ..addAll(
+          list.map((e) => Alarm.fromJson((e as Map).cast<String, Object?>())),
+        );
+      notifyListeners();
+    } catch (_) {}
+  }
+
   // app was closed when an alarm fired, catch up on it once at startup
   void _reconcileMissedFires(DateTime lastSeen) {
     final now = _clock();

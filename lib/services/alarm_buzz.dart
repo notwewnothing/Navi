@@ -44,6 +44,15 @@ class AlarmBuzz {
     } catch (_) {}
   }
 
+  static Future<void> stopService() async {
+    try {
+      await _channel.invokeMethod('stop');
+    } catch (_) {}
+    try {
+      await Vibration.cancel();
+    } catch (_) {}
+  }
+
   static Future<void> cancelAllScheduled() async {
     try {
       await _channel.invokeMethod('cancelAllScheduled');

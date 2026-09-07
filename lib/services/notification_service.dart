@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -8,14 +10,35 @@ import '../models/alarm.dart';
 import '../models/habit.dart';
 import 'alarm_buzz.dart';
 import 'alarm_store.dart';
+import 'notification_actions.dart';
+
+/// Runs in its own isolate when the app is dead, so it writes through
+/// NotificationActions instead of the stores.
+@pragma('vm:entry-point')
+Future<void> notificationBackgroundHandler(NotificationResponse response) async {
+  // the background isolate starts with no plugins bound, so prefs would throw
+  DartPluginRegistrant.ensureInitialized();
+  final payload = response.payload ?? '';
+  final habitId = int.tryParse(payload.replaceFirst('habit:', ''));
+  final alarmId = int.tryParse(payload.replaceFirst('alarm:', ''));
+  switch (response.actionId) {
+    case habitCheckInActionId:
+      if (habitId != null) await NotificationActions.checkInHabit(habitId);
+    case alarmSnoozeActionId:
+      if (alarmId != null) await NotificationActions.snoozeAlarm(alarmId);
+    case alarmDismissActionId:
+      if (alarmId != null) await NotificationActions.dismissAlarm(alarmId);
+  }
+}
 
 class NotificationService implements AlarmScheduler {
-  NotificationService({this.onAlarmTap});
+  NotificationService({this.onAlarmTap, this.onActionApplied});
 
   static const _habitIdBase = 1000000;
 
   final _plugin = FlutterLocalNotificationsPlugin();
   final void Function(int alarmId)? onAlarmTap;
+  final VoidCallback? onActionApplied;
   bool _ready = false;
 
   List<Alarm> _alarms = const [];
@@ -37,6 +60,8 @@ class NotificationService implements AlarmScheduler {
           linux: LinuxInitializationSettings(defaultActionName: 'Open'),
         ),
         onDidReceiveNotificationResponse: _handleTap,
+        onDidReceiveBackgroundNotificationResponse:
+            notificationBackgroundHandler,
       );
 
       final android = _plugin
@@ -73,6 +98,30 @@ class NotificationService implements AlarmScheduler {
 
   void _handleTap(NotificationResponse response) {
     final payload = response.payload ?? '';
+    final action = response.actionId;
+
+    if (action == habitCheckInActionId) {
+      final id = int.tryParse(payload.replaceFirst('habit:', ''));
+      if (id != null) {
+        NotificationActions.checkInHabit(id).then((_) {
+          onActionApplied?.call();
+        });
+      }
+      return;
+    }
+    if (action == alarmSnoozeActionId || action == alarmDismissActionId) {
+      final id = int.tryParse(payload.replaceFirst('alarm:', ''));
+      if (id == null) return;
+      final work = action == alarmSnoozeActionId
+          ? NotificationActions.snoozeAlarm(id)
+          : NotificationActions.dismissAlarm(id);
+      work.then((_) {
+        AlarmBuzz.stopService();
+        onActionApplied?.call();
+      });
+      return;
+    }
+
     if (payload.startsWith('alarm:')) {
       final id = int.tryParse(payload.substring(6));
       if (id != null) onAlarmTap?.call(id);
@@ -93,6 +142,18 @@ class NotificationService implements AlarmScheduler {
       ongoing: true,
       enableVibration: true,
       vibrationPattern: notificationVibrationPattern,
+      actions: const [
+        AndroidNotificationAction(
+          alarmSnoozeActionId,
+          'Snooze',
+          cancelNotification: true,
+        ),
+        AndroidNotificationAction(
+          alarmDismissActionId,
+          'Dismiss',
+          cancelNotification: true,
+        ),
+      ],
     ),
     iOS: const DarwinNotificationDetails(
       presentAlert: true,
@@ -109,6 +170,13 @@ class NotificationService implements AlarmScheduler {
       importance: Importance.high,
       priority: Priority.defaultPriority,
       category: AndroidNotificationCategory.reminder,
+      actions: [
+        AndroidNotificationAction(
+          habitCheckInActionId,
+          'Check in',
+          cancelNotification: true,
+        ),
+      ],
     ),
     iOS: DarwinNotificationDetails(presentAlert: true, presentSound: true),
   );

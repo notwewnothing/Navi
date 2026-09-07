@@ -62,6 +62,33 @@ class HabitStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> reload() async {
+    try {
+      await _prefs?.reload();
+      final raw = _prefs?.getString(_prefsKey);
+      if (raw == null) return;
+      final data = (jsonDecode(raw) as Map).cast<String, Object?>();
+      _habits
+        ..clear()
+        ..addAll(
+          (data['habits'] as List? ?? []).map(
+            (e) => Habit.fromJson((e as Map).cast<String, Object?>()),
+          ),
+        );
+      _logs
+        ..clear()
+        ..addAll(
+          (data['logs'] as List? ?? []).map(
+            (e) => HabitLog.fromJson((e as Map).cast<String, Object?>()),
+          ),
+        );
+      _nextId = data['nextId'] as int? ?? _nextId;
+      _remindersEnabled = data['remindersEnabled'] as bool? ?? _remindersEnabled;
+      _reindex();
+      notifyListeners();
+    } catch (_) {}
+  }
+
   void _reindex() {
     _byDay.clear();
     for (final log in _logs) {

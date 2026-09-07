@@ -28,7 +28,7 @@ class NaviApp extends StatefulWidget {
   State<NaviApp> createState() => _NaviAppState();
 }
 
-class _NaviAppState extends State<NaviApp> {
+class _NaviAppState extends State<NaviApp> with WidgetsBindingObserver {
   final _navigator = GlobalKey<NavigatorState>();
 
   late final SettingsStore _settings;
@@ -46,8 +46,12 @@ class _NaviAppState extends State<NaviApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _settings = SettingsStore();
-    _notifications = NotificationService(onAlarmTap: _openRingById);
+    _notifications = NotificationService(
+      onAlarmTap: _openRingById,
+      onActionApplied: _reloadFromDisk,
+    );
     _alarms = AlarmStore(scheduler: _notifications);
     _habits = HabitStore(notifications: _notifications);
     _journal = JournalStore();
@@ -102,7 +106,18 @@ class _NaviAppState extends State<NaviApp> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _reloadFromDisk();
+  }
+
+  void _reloadFromDisk() {
+    _habits.reload();
+    _alarms.reload();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _alarms.onRing = null;
     _settings.removeListener(_applySettings);
     _alarms.dispose();
