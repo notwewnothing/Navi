@@ -90,6 +90,7 @@ Future<void> _pickAndCaption(
   }
   if (picked == null) return;
   final String relativePath;
+  String? thumbPath;
   // videos are big enough that the copy is worth showing
   if (type == JournalType.video && context.mounted) {
     final handle = showNdProgress(
@@ -105,6 +106,8 @@ Future<void> _pickAndCaption(
           detailText: '${_mb(done)} / ${_mb(total)} MB',
         ),
       );
+      handle.update(1, detailText: 'Making poster frame');
+      thumbPath = await MediaStore.makeVideoThumbnail(relativePath);
     } finally {
       handle.close();
     }
@@ -112,7 +115,13 @@ Future<void> _pickAndCaption(
     relativePath = await MediaStore.importFile(picked.path);
   }
   navigator.push(
-    slideUpRoute(_MediaCaptionScreen(type: type, mediaPath: relativePath)),
+    slideUpRoute(
+      _MediaCaptionScreen(
+        type: type,
+        mediaPath: relativePath,
+        thumbPath: thumbPath,
+      ),
+    ),
   );
 }
 
@@ -598,10 +607,15 @@ class _TextEntryScreenState extends State<_TextEntryScreen> {
 }
 
 class _MediaCaptionScreen extends StatefulWidget {
-  const _MediaCaptionScreen({required this.type, required this.mediaPath});
+  const _MediaCaptionScreen({
+    required this.type,
+    required this.mediaPath,
+    this.thumbPath,
+  });
 
   final JournalType type;
   final String mediaPath;
+  final String? thumbPath;
 
   @override
   State<_MediaCaptionScreen> createState() => _MediaCaptionScreenState();
@@ -651,6 +665,7 @@ class _MediaCaptionScreenState extends State<_MediaCaptionScreen> {
       type: widget.type,
       body: _captionController.text.trim(),
       mediaPath: widget.mediaPath,
+      thumbPath: widget.thumbPath,
       durationMs: _videoDurationMs,
     );
     _saved = true;
@@ -665,7 +680,10 @@ class _MediaCaptionScreenState extends State<_MediaCaptionScreen> {
     final p = context.palette;
     return PopScope(
       onPopInvokedWithResult: (didPop, _) {
-        if (didPop && !_saved) MediaStore.delete(widget.mediaPath);
+        if (didPop && !_saved) {
+          MediaStore.delete(widget.mediaPath);
+          MediaStore.delete(widget.thumbPath);
+        }
       },
       child: Scaffold(
         body: SafeArea(

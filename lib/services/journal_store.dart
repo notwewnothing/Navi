@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
@@ -44,6 +45,7 @@ class JournalStore extends ChangeNotifier {
     _reindex();
     _loaded = true;
     notifyListeners();
+    unawaited(backfillVideoThumbs());
   }
 
   void _sort() => _entries.sort((a, b) => b.at.compareTo(a.at));
@@ -59,6 +61,7 @@ class JournalStore extends ChangeNotifier {
     required JournalType type,
     String body = '',
     String? mediaPath,
+    String? thumbPath,
     int? durationMs,
   }) async {
     final entry = JournalEntry(
@@ -66,6 +69,7 @@ class JournalStore extends ChangeNotifier {
       type: type,
       body: body,
       mediaPath: mediaPath,
+      thumbPath: thumbPath,
       durationMs: durationMs,
       at: _clock(),
     );
@@ -83,7 +87,10 @@ class JournalStore extends ChangeNotifier {
   }
 
   Future<void> remove(JournalEntry entry, {bool keepMedia = false}) async {
-    if (!keepMedia) await MediaStore.delete(entry.mediaPath);
+    if (!keepMedia) {
+      await MediaStore.delete(entry.mediaPath);
+      await MediaStore.delete(entry.thumbPath);
+    }
     _entries.remove(entry);
     _reindex();
     await _save();
@@ -100,8 +107,10 @@ class JournalStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> purgeMedia(JournalEntry entry) =>
-      MediaStore.delete(entry.mediaPath);
+  Future<void> purgeMedia(JournalEntry entry) async {
+    await MediaStore.delete(entry.mediaPath);
+    await MediaStore.delete(entry.thumbPath);
+  }
 
   List<JournalEntry> entriesForDay(DateTime day) =>
       List.unmodifiable(_byDay[dayKeyOf(day)] ?? const <JournalEntry>[]);
@@ -132,6 +141,28 @@ class JournalStore extends ChangeNotifier {
     await _save();
     notifyListeners();
   }
+
+  /// Videos imported before posters existed have no thumb, so make one the
+  /// first time we load them.
+  Future<void> backfillVideoThumbs() async {
+    var changed = false;
+    for (final entry in _entries) {
+      if (entry.type != JournalType.video) continue;
+      if (entry.thumbPath != null || entry.mediaPath == null) continue;
+      final made = await MediaStore.makeVideoThumbnail(entry.mediaPath!);
+      if (made == null) continue;
+      entry.thumbPath = made;
+      changed = true;
+    }
+    if (!changed) return;
+    await _save();
+    notifyListeners();
+  }
+
+  List<String> videoPostersForDay(DateTime day) => List.unmodifiable([
+    for (final e in _byDay[dayKeyOf(day)] ?? const <JournalEntry>[])
+      if (e.type == JournalType.video && e.thumbPath != null) e.thumbPath!,
+  ]);
 
   List<JournalEntry> search({String query = '', JournalType? type}) {
     final q = query.trim().toLowerCase();

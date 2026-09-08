@@ -52,6 +52,7 @@ class _JournalCalendarScreenState extends State<JournalCalendarScreen> {
     DateTime day,
   ) => [
     for (final e in journal.photoEntriesForDay(day)) e.mediaPath!,
+    ...journal.videoPostersForDay(day),
     for (final log in habits.photoLogsForDay(day)) log.photoPath!,
   ];
 

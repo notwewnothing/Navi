@@ -252,7 +252,10 @@ class _EntryCard extends StatelessWidget {
           width: double.infinity,
           color: p.panelHi,
           child: Stack(
+            fit: StackFit.expand,
             children: [
+              if (entry.thumbPath != null)
+                MediaImage(entry.thumbPath, fit: BoxFit.cover),
               Center(
                 child: Container(
                   width: 48,

@@ -15,6 +15,7 @@ class JournalEntry {
     required this.type,
     this.body = '',
     this.mediaPath,
+    this.thumbPath,
     this.durationMs,
     required this.at,
   });
@@ -23,6 +24,7 @@ class JournalEntry {
   final JournalType type;
   String body;
   String? mediaPath;
+  String? thumbPath;
   int? durationMs;
   final DateTime at;
 
@@ -31,6 +33,7 @@ class JournalEntry {
     'type': type.name,
     'body': body,
     'mediaPath': mediaPath,
+    'thumbPath': thumbPath,
     'durationMs': durationMs,
     'at': at.millisecondsSinceEpoch,
   };
@@ -40,6 +43,8 @@ class JournalEntry {
     type: JournalType.values.asNameMap()[json['type']] ?? JournalType.text,
     body: json['body'] as String? ?? '',
     mediaPath: json['mediaPath'] as String?,
+    // absent on entries saved before video posters existed
+    thumbPath: json['thumbPath'] as String?,
     durationMs: json['durationMs'] as int?,
     at: DateTime.fromMillisecondsSinceEpoch(json['at'] as int? ?? 0),
   );

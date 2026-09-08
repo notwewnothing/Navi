@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+
+const _thumbChannel = MethodChannel('navi/video_thumb');
 
 class MediaStore {
   static Directory? _docs;
@@ -48,6 +51,24 @@ class MediaStore {
       onProgress(total, total);
     }
     return 'media/$month/$name';
+  }
+
+  /// Grabs a poster frame beside the video. Returns null if the codec or the
+  /// file will not give one up, so callers keep the plain play tile.
+  static Future<String?> makeVideoThumbnail(String relativeVideoPath) async {
+    try {
+      final absolute = await absolutePath(relativeVideoPath);
+      final outPath = '${absolute.substring(0, absolute.lastIndexOf('.'))}.jpg';
+      final made = await _thumbChannel.invokeMethod<String>('extract', {
+        'videoPath': absolute,
+        'outPath': outPath,
+        'maxWidth': 720,
+      });
+      if (made == null) return null;
+      return toRelative(made);
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<String> newRecordingPath(String ext) async {

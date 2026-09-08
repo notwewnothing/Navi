@@ -99,6 +99,49 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "navi/video_thumb").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "extract" -> {
+                    val videoPath = call.argument<String>("videoPath")
+                    val outPath = call.argument<String>("outPath")
+                    val maxWidth = call.argument<Int>("maxWidth") ?: 720
+                    if (videoPath == null || outPath == null) {
+                        result.error("BAD_ARGS", "videoPath and outPath are required", null)
+                        return@setMethodCallHandler
+                    }
+                    val retriever = android.media.MediaMetadataRetriever()
+                    try {
+                        retriever.setDataSource(videoPath)
+                        val frame = retriever.getFrameAtTime(0)
+                            ?: retriever.frameAtTime
+                        if (frame == null) {
+                            result.success(null)
+                            return@setMethodCallHandler
+                        }
+                        val scaled = if (frame.width > maxWidth) {
+                            val height = frame.height * maxWidth / frame.width
+                            android.graphics.Bitmap.createScaledBitmap(frame, maxWidth, height, true)
+                        } else {
+                            frame
+                        }
+                        java.io.File(outPath).outputStream().use { out ->
+                            scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                        }
+                        if (scaled !== frame) scaled.recycle()
+                        frame.recycle()
+                        result.success(outPath)
+                    } catch (e: Exception) {
+                        android.util.Log.w("VideoThumb", "extract failed: ${e.message}")
+                        result.success(null)
+                    } finally {
+                        try {
+                            retriever.release()
+                        } catch (_: Exception) {}
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "navi/app_icons").setMethodCallHandler { call, result ->
             when (call.method) {
                 "getAppIcon" -> {
