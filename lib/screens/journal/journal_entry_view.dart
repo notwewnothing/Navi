@@ -147,6 +147,7 @@ class _JournalEntryViewState extends State<JournalEntryView> {
   Duration _audioDur = Duration.zero;
   bool _audioPlaying = false;
   bool _audioStarted = false;
+  Duration? _pendingSeek;
   String? _audioPath;
 
   bool _mediaMissing = false;
@@ -211,6 +212,7 @@ class _JournalEntryViewState extends State<JournalEntryView> {
         setState(() {
           _audioPlaying = false;
           _audioStarted = false;
+          _pendingSeek = null;
           _audioPos = Duration.zero;
         });
       }
@@ -236,6 +238,11 @@ class _JournalEntryViewState extends State<JournalEntryView> {
       } else {
         await player.play(DeviceFileSource(path));
         _audioStarted = true;
+        final pending = _pendingSeek;
+        if (pending != null) {
+          _pendingSeek = null;
+          await player.seek(pending);
+        }
       }
       if (mounted) setState(() => _audioPlaying = true);
     } catch (_) {}
@@ -435,6 +442,25 @@ class _JournalEntryViewState extends State<JournalEntryView> {
     );
   }
 
+  Future<void> _seekAudio(Duration to) async {
+    final player = _audio;
+    if (player == null) return;
+    // no source is loaded until the first play(), so hold the target till then
+    if (!_audioStarted) {
+      if (mounted) {
+        setState(() {
+          _pendingSeek = to;
+          _audioPos = to;
+        });
+      }
+      return;
+    }
+    try {
+      await player.seek(to);
+      if (mounted) setState(() => _audioPos = to);
+    } catch (_) {}
+  }
+
   Widget _audioBody(NaviPalette p, JournalEntry entry) {
     if (_mediaMissing) return _missingTile(p);
     final totalMs = _audioDur.inMilliseconds > 0
@@ -488,11 +514,23 @@ class _JournalEntryViewState extends State<JournalEntryView> {
             ],
           ),
           const SizedBox(height: NdSpace.xl),
-          NdProgressBar(
-            value: totalMs == 0 ? 0 : posMs / totalMs,
-            segments: 28,
-            height: 6,
-          ),
+          // notes recorded before waveforms were stored keep the plain bar
+          if (entry.waveform != null && entry.waveform!.isNotEmpty)
+            NdWaveform(
+              levels: entry.waveform!,
+              progress: totalMs == 0 ? 0 : posMs / totalMs,
+              onSeek: totalMs == 0
+                  ? null
+                  : (v) => _seekAudio(
+                      Duration(milliseconds: (v * totalMs).round()),
+                    ),
+            )
+          else
+            NdProgressBar(
+              value: totalMs == 0 ? 0 : posMs / totalMs,
+              segments: 28,
+              height: 6,
+            ),
         ],
       ),
     );

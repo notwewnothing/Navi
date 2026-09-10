@@ -152,6 +152,7 @@ class _EntrySheetState extends State<_EntrySheet> {
   Timer? _clockTimer;
   final Stopwatch _stopwatch = Stopwatch();
   final List<double> _amps = [];
+  final List<double> _allAmps = [];
   String? _recPath;
   int _durationMs = 0;
   bool _saving = false;
@@ -191,6 +192,7 @@ class _EntrySheetState extends State<_EntrySheet> {
     setState(() {
       _pane = _SheetPane.record;
       _amps.clear();
+      _allAmps.clear();
     });
     try {
       if (!await _rec.hasPermission()) {
@@ -211,7 +213,10 @@ class _EntrySheetState extends State<_EntrySheet> {
         if (!mounted) return;
         setState(() {
           // amplitudes come in as dB, +45 shifts silence to 0 before the 0-1 clamp
-          _amps.add(((amp.current + 45) / 45).clamp(0.0, 1.0));
+          final level = ((amp.current + 45) / 45).clamp(0.0, 1.0);
+          _allAmps.add(level);
+          _amps.add(level);
+          // the live meter only shows a rolling window, _allAmps keeps the rest
           if (_amps.length > 40) _amps.removeAt(0);
         });
       });
@@ -251,6 +256,7 @@ class _EntrySheetState extends State<_EntrySheet> {
       type: JournalType.audio,
       body: _captionController.text.trim(),
       mediaPath: relativePath,
+      waveform: downsampleAmplitudes(_allAmps),
       durationMs: _durationMs,
     );
     _saved = true;

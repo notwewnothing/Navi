@@ -1159,3 +1159,81 @@ class NdWheel extends StatelessWidget {
     );
   }
 }
+
+/// Scrubbable waveform for voice notes. Bars left of the playhead take the
+/// accent, the rest stay muted; dragging reports a 0-1 position.
+class NdWaveform extends StatefulWidget {
+  const NdWaveform({
+    super.key,
+    required this.levels,
+    required this.progress,
+    this.onSeek,
+    this.height = 56,
+  });
+
+  final List<int> levels;
+  final double progress;
+  final ValueChanged<double>? onSeek;
+  final double height;
+
+  @override
+  State<NdWaveform> createState() => _NdWaveformState();
+}
+
+class _NdWaveformState extends State<NdWaveform> {
+  double? _dragValue;
+
+  void _update(double dx, double width) {
+    if (width <= 0) return;
+    setState(() => _dragValue = (dx / width).clamp(0.0, 1.0));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final shown = _dragValue ?? widget.progress.clamp(0.0, 1.0);
+    return LayoutBuilder(
+      builder: (context, box) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (d) => _update(d.localPosition.dx, box.maxWidth),
+        onTapUp: (_) {
+          final value = _dragValue;
+          setState(() => _dragValue = null);
+          if (value != null) widget.onSeek?.call(value);
+        },
+        onHorizontalDragStart: (d) => _update(d.localPosition.dx, box.maxWidth),
+        onHorizontalDragUpdate: (d) =>
+            _update(d.localPosition.dx, box.maxWidth),
+        onHorizontalDragEnd: (_) {
+          final value = _dragValue;
+          setState(() => _dragValue = null);
+          if (value != null) widget.onSeek?.call(value);
+        },
+        child: SizedBox(
+          height: widget.height,
+          width: double.infinity,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              for (final (i, level) in widget.levels.indexed) ...[
+                if (i > 0) const SizedBox(width: 2),
+                Expanded(
+                  child: Container(
+                    height: (widget.height * (0.12 + level / 100 * 0.88))
+                        .clamp(3.0, widget.height),
+                    decoration: BoxDecoration(
+                      color: i / widget.levels.length <= shown
+                          ? p.accent
+                          : p.borderHi,
+                      borderRadius: BorderRadius.circular(NdRadius.small),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

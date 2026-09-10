@@ -62,6 +62,7 @@ class JournalStore extends ChangeNotifier {
     String body = '',
     String? mediaPath,
     String? thumbPath,
+    List<int>? waveform,
     int? durationMs,
   }) async {
     final entry = JournalEntry(
@@ -70,6 +71,7 @@ class JournalStore extends ChangeNotifier {
       body: body,
       mediaPath: mediaPath,
       thumbPath: thumbPath,
+      waveform: waveform,
       durationMs: durationMs,
       at: _clock(),
     );
