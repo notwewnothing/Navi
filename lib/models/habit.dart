@@ -9,6 +9,7 @@ class Habit {
     this.dayBits = 0x7f,
     this.colorIndex = 0,
     this.enabled = true,
+    this.pausedUntil,
     required this.createdAt,
   });
 
@@ -21,6 +22,8 @@ class Habit {
   int dayBits;
   int colorIndex;
   bool enabled;
+  /// Vacation mode: days up to and including this one never break the streak.
+  DateTime? pausedUntil;
   final DateTime createdAt;
 
   // same bitmask as alarms, bit 0 = Monday
@@ -36,6 +39,7 @@ class Habit {
     'dayBits': dayBits,
     'colorIndex': colorIndex,
     'enabled': enabled,
+    'pausedUntil': pausedUntil?.millisecondsSinceEpoch,
     'createdAt': createdAt.millisecondsSinceEpoch,
   };
 
@@ -50,6 +54,9 @@ class Habit {
     dayBits: json['dayBits'] as int? ?? 0x7f,
     colorIndex: json['colorIndex'] as int? ?? 0,
     enabled: json['enabled'] as bool? ?? true,
+    pausedUntil: json['pausedUntil'] == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(json['pausedUntil'] as int),
     createdAt: DateTime.fromMillisecondsSinceEpoch(
       json['createdAt'] as int? ?? 0,
     ),
@@ -63,6 +70,7 @@ class HabitLog {
     required this.dayKey,
     this.photoPath,
     this.note,
+    this.skipped = false,
     required this.at,
   });
 
@@ -71,6 +79,8 @@ class HabitLog {
   final String dayKey;
   String? photoPath;
   String? note;
+  /// A deliberate rest day: counts as neither done nor missed.
+  bool skipped;
   final DateTime at;
 
   Map<String, Object?> toJson() => {
@@ -79,6 +89,7 @@ class HabitLog {
     'dayKey': dayKey,
     'photoPath': photoPath,
     'note': note,
+    'skipped': skipped,
     'at': at.millisecondsSinceEpoch,
   };
 
@@ -88,6 +99,8 @@ class HabitLog {
     dayKey: json['dayKey'] as String,
     photoPath: json['photoPath'] as String?,
     note: json['note'] as String?,
+    // absent on logs written before rest days existed
+    skipped: json['skipped'] as bool? ?? false,
     at: DateTime.fromMillisecondsSinceEpoch(json['at'] as int? ?? 0),
   );
 }

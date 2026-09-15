@@ -73,10 +73,20 @@ class _HabitRow extends StatelessWidget {
     final store = HabitScope.of(context);
     final dotColor = habitDotColors[habit.colorIndex % habitDotColors.length];
     final streak = store.streak(habit);
+    final resting = store.isRestDay(habit, DateTime.now());
     return Dismissible(
       key: ValueKey('habit-${habit.id}'),
-      direction: DismissDirection.endToStart,
+      direction: DismissDirection.horizontal,
       background: Container(
+        decoration: BoxDecoration(
+          color: p.accentDim,
+          borderRadius: BorderRadius.circular(NdRadius.card),
+        ),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: NdSpace.xl),
+        child: NdIcon(Nd.moon, color: p.text, size: 22),
+      ),
+      secondaryBackground: Container(
         decoration: BoxDecoration(
           color: p.danger,
           borderRadius: BorderRadius.circular(NdRadius.card),
@@ -85,6 +95,30 @@ class _HabitRow extends StatelessWidget {
         padding: const EdgeInsets.only(right: NdSpace.xl),
         child: const NdIcon(Nd.trash, color: Colors.white, size: 22),
       ),
+      // a rest day is not a dismissal, so swiping right undoes itself
+      confirmDismiss: (direction) async {
+        if (direction != DismissDirection.startToEnd) return true;
+        HapticFeedback.mediumImpact();
+        Sfx.tick();
+        if (resting) {
+          await store.uncheck(habit);
+          if (context.mounted) {
+            showNdToast(context, 'Rest day cleared', glyph: Nd.check);
+          }
+        } else {
+          await store.skipDay(habit);
+          if (context.mounted) {
+            showNdToast(
+              context,
+              'Resting "${habit.name}" today',
+              glyph: Nd.moon,
+              actionLabel: 'Undo',
+              onAction: () => store.uncheck(habit),
+            );
+          }
+        }
+        return false;
+      },
       onDismissed: (_) async {
         HapticFeedback.mediumImpact();
         Sfx.tick();
@@ -140,12 +174,22 @@ class _HabitRow extends StatelessWidget {
                   const SizedBox(height: 3),
                   Row(
                     children: [
+                      if (resting) ...[
+                        NdIcon(Nd.moon, color: p.accent, size: 11),
+                        const SizedBox(width: NdSpace.xs),
+                      ],
                       Flexible(
                         child: Text(
-                          habitScheduleLabel(habit),
+                          resting
+                              ? (store.isPaused(habit, DateTime.now())
+                                    ? 'Paused'
+                                    : 'Resting today')
+                              : habitScheduleLabel(habit),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: p.label,
+                          style: resting
+                              ? p.label.copyWith(color: p.accent)
+                              : p.label,
                         ),
                       ),
                       if (habit.requirePhoto) ...[

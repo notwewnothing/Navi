@@ -190,10 +190,32 @@ class HabitStore extends ChangeNotifier {
   HabitLog? logFor(Habit habit, DateTime day) =>
       _byDay[dayKeyOf(day)]?[habit.id];
 
-  bool isDone(Habit habit, DateTime day) => logFor(habit, day) != null;
+  bool isDone(Habit habit, DateTime day) {
+    final log = logFor(habit, day);
+    return log != null && !log.skipped;
+  }
 
-  List<HabitLog> logsForDay(DateTime day) =>
-      List.unmodifiable(_byDay[dayKeyOf(day)]?.values ?? const <HabitLog>[]);
+  bool isSkipped(Habit habit, DateTime day) =>
+      logFor(habit, day)?.skipped ?? false;
+
+  /// True while the habit is on vacation, which covers the whole day.
+  bool isPaused(Habit habit, DateTime day) {
+    final until = habit.pausedUntil;
+    if (until == null) return false;
+    final endOfDay = DateTime(until.year, until.month, until.day, 23, 59, 59);
+    return !day.isAfter(endOfDay);
+  }
+
+  /// A rest day either way: explicitly skipped, or a vacation day that was
+  /// left undone. Checking in during a vacation still counts as a completion.
+  bool isRestDay(Habit habit, DateTime day) =>
+      isSkipped(habit, day) || (isPaused(habit, day) && !isDone(habit, day));
+
+  List<HabitLog> logsForDay(DateTime day) => List.unmodifiable(
+    (_byDay[dayKeyOf(day)]?.values ?? const <HabitLog>[]).where(
+      (l) => !l.skipped,
+    ),
+  );
 
   Future<bool> checkIn(
     Habit habit, {
@@ -230,6 +252,37 @@ class HabitStore extends ChangeNotifier {
     return scheduled.isNotEmpty && scheduled.every((h) => isDone(h, when));
   }
 
+  Future<void> skipDay(Habit habit, {DateTime? day}) async {
+    final when = day ?? _clock();
+    final key = dayKeyOf(when);
+    final existing = _byDay[key]?[habit.id];
+    if (existing != null) {
+      await MediaStore.delete(existing.photoPath);
+      existing
+        ..photoPath = null
+        ..skipped = true;
+    } else {
+      final log = HabitLog(
+        id: _nextId++,
+        habitId: habit.id,
+        dayKey: key,
+        skipped: true,
+        at: _clock(),
+      );
+      _logs.add(log);
+      (_byDay[key] ??= {})[habit.id] = log;
+    }
+    await _save();
+    notifyListeners();
+  }
+
+  Future<void> setPausedUntil(Habit habit, DateTime? until) async {
+    habit.pausedUntil = until;
+    await _save();
+    await _syncReminders();
+    notifyListeners();
+  }
+
   Future<void> uncheck(Habit habit, {DateTime? day}) async {
     final key = dayKeyOf(day ?? _clock());
     final log = _byDay[key]?[habit.id];
@@ -242,13 +295,16 @@ class HabitStore extends ChangeNotifier {
   }
 
   int streak(Habit habit) {
-    var day = DateTime.now();
+    var day = _clock();
     var count = 0;
-    if (habit.scheduledOn(day) && !isDone(habit, day)) {
+    if (habit.scheduledOn(day) &&
+        !isDone(habit, day) &&
+        !isRestDay(habit, day)) {
       day = day.subtract(const Duration(days: 1));
     }
     for (var i = 0; i < 3660; i++) {
-      if (habit.scheduledOn(day)) {
+      // rest days are stepped over: they neither extend nor break the run
+      if (habit.scheduledOn(day) && !isRestDay(habit, day)) {
         if (!isDone(habit, day)) break;
         count++;
       }
@@ -257,7 +313,10 @@ class HabitStore extends ChangeNotifier {
     return count;
   }
 
-  int completionsOn(DateTime day) => _byDay[dayKeyOf(day)]?.length ?? 0;
+  int completionsOn(DateTime day) =>
+      (_byDay[dayKeyOf(day)]?.values ?? const <HabitLog>[])
+          .where((l) => !l.skipped)
+          .length;
 
   int boardLevel(DateTime day) {
     final done = completionsOn(day);
@@ -276,7 +335,9 @@ class HabitStore extends ChangeNotifier {
 
   int todayTotal() {
     final now = _clock();
-    return enabledHabits.where((h) => h.scheduledOn(now)).length;
+    return enabledHabits
+        .where((h) => h.scheduledOn(now) && !isRestDay(h, now))
+        .length;
   }
 
   List<HabitLog> photoLogsForDay(DateTime day) => List.unmodifiable(

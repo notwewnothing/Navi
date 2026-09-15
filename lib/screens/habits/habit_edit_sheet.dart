@@ -41,6 +41,7 @@ class _HabitEditSheetState extends State<_HabitEditSheet> {
   late bool _reminderOn = widget.habit?.reminderMinutes != null;
   late int _dayBits = widget.habit?.dayBits ?? 0x7f;
   late int _colorIndex = widget.habit?.colorIndex ?? 0;
+  late DateTime? _pausedUntil = widget.habit?.pausedUntil;
 
   int _reminderMinutes = 9 * 60;
   bool _seededDefaults = false;
@@ -127,6 +128,22 @@ class _HabitEditSheetState extends State<_HabitEditSheet> {
     }
   }
 
+  static String _pauseLabel(DateTime until) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${until.day} ${months[until.month - 1]}';
+  }
+
+  /// Rounds the remaining pause back to the preset that produced it.
+  static int _pauseDays(DateTime until) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final end = DateTime(until.year, until.month, until.day);
+    return end.difference(today).inDays + 1;
+  }
+
   Future<void> _save() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
@@ -148,6 +165,7 @@ class _HabitEditSheetState extends State<_HabitEditSheet> {
         ..description = _descriptionController.text.trim()
         ..icon = _icon
         ..requirePhoto = _requirePhoto
+        ..pausedUntil = _pausedUntil
         ..reminderMinutes = _reminderOn ? _reminderMinutes : null
         ..dayBits = _dayBits
         ..colorIndex = _colorIndex;
@@ -240,6 +258,61 @@ class _HabitEditSheetState extends State<_HabitEditSheet> {
                         onChanged: (v) => setState(() => _requirePhoto = v),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: NdSpace.lg),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Rest', style: p.row),
+                            const SizedBox(height: 2),
+                            Text(
+                              _pausedUntil == null
+                                  ? 'Streak keeps counting'
+                                  : 'Paused until ${_pauseLabel(_pausedUntil!)}',
+                              style: p.label.copyWith(fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: NdSpace.md),
+                  SizedBox(
+                    height: 36,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        for (final (label, days) in const [
+                          ('None', 0),
+                          ('3 days', 3),
+                          ('1 week', 7),
+                          ('2 weeks', 14),
+                          ('1 month', 30),
+                        ]) ...[
+                          if (label != 'None') const SizedBox(width: NdSpace.sm),
+                          NdChip(
+                            label: label,
+                            selected: days == 0
+                                ? _pausedUntil == null
+                                : _pausedUntil != null &&
+                                      _pauseDays(_pausedUntil!) == days,
+                            onTap: () {
+                              Sfx.tick();
+                              setState(() {
+                                _pausedUntil = days == 0
+                                    ? null
+                                    : DateTime.now().add(
+                                        Duration(days: days - 1),
+                                      );
+                              });
+                            },
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: NdSpace.lg),
                   Row(
