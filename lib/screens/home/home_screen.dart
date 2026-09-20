@@ -21,15 +21,6 @@ import '../stats/screen_time_screen.dart';
 import '../timer/timer_screen.dart';
 import '../shell.dart';
 
-/// PLACEHOLDER. The "Distracted today" card is not wired to any data source —
-/// every value below is static. Replace with real screen-time data.
-// TODO(navi): wire "Distracted today" to DeviceUsage / SessionStore.
-const _kDistractedPlaceholder = (
-  value: '55 mins',
-  trendUp: true,
-  delta: '(more than yesterday by 12mins)',
-);
-
 enum _QuickAdd { habit, journal, event }
 
 class HomeScreen extends StatefulWidget {
@@ -195,22 +186,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ).push(slideUpRoute(const ScreenTimeScreen())),
             ),
             const SizedBox(height: NdSpace.md),
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: _TodayStatCard(
-                      done: done,
-                      scheduled: scheduled,
-                      store: store,
-                      day: now,
-                    ),
-                  ),
-                  const SizedBox(width: NdSpace.md),
-                  const Expanded(child: _DistractedStatCard()),
-                ],
-              ),
+            _TodayStatCard(
+              done: done,
+              scheduled: scheduled,
+              store: store,
+              day: now,
             ),
             const SizedBox(height: NdSpace.xl),
 
@@ -495,8 +475,8 @@ class _TodayStatCard extends StatelessWidget {
   final HabitStore store;
   final DateTime day;
 
-  // past ~12 the bars get too thin to read, so cap and count the remainder
-  static const _maxBars = 12;
+  // past ~24 the bars get too thin to read, so cap and count the remainder
+  static const _maxBars = 24;
 
   @override
   Widget build(BuildContext context) {
@@ -529,7 +509,6 @@ class _TodayStatCard extends StatelessWidget {
               ],
             ),
           ),
-          const Spacer(),
           const SizedBox(height: NdSpace.md),
           if (total == 0)
             Row(
@@ -579,58 +558,6 @@ class _TodayStatCard extends StatelessWidget {
                 ],
               ],
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DistractedStatCard extends StatelessWidget {
-  // takes no data, on purpose — see _kDistractedPlaceholder
-  const _DistractedStatCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    return NdCard(
-      padding: const EdgeInsets.all(NdSpace.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(child: Text('DISTRACTED\nTODAY', style: p.h2)),
-              NdIcon(Nd.hourglass, color: p.textDim, size: 18),
-            ],
-          ),
-          const Spacer(),
-          const SizedBox(height: NdSpace.md),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Row(
-              children: [
-                Text(
-                  _kDistractedPlaceholder.value,
-                  maxLines: 1,
-                  style: p.dot(30, color: p.danger),
-                ),
-                const SizedBox(width: NdSpace.xs),
-                NdIcon(
-                  _kDistractedPlaceholder.trendUp ? Nd.up : Nd.down,
-                  color: p.danger,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: NdSpace.xs),
-          Text(
-            _kDistractedPlaceholder.delta,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: p.micro.copyWith(color: p.textGhost),
-          ),
         ],
       ),
     );

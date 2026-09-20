@@ -90,7 +90,7 @@ void main() {
     tester,
   ) async {
     final habits = HabitStore();
-    for (var i = 0; i < 15; i++) {
+    for (var i = 0; i < 27; i++) {
       await habits.addHabit(name: 'Habit $i');
     }
     await pumpAt(tester, harness(habits, SettingsStore()));
