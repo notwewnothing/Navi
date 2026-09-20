@@ -8,6 +8,7 @@ import '../../services/sfx.dart';
 import '../../theme/palette.dart';
 import '../../widgets/month_grid.dart';
 import '../../widgets/nd_icons.dart';
+import '../../widgets/nd_photo_viewer.dart';
 import '../../widgets/nd_widgets.dart';
 import '../../widgets/routes.dart';
 import '../../widgets/tactile.dart';
@@ -499,14 +500,23 @@ class _DayGalleryState extends State<_DayGallery> {
               Sfx.tick();
               setState(() => _page = i);
             },
-            itemBuilder: (context, i) => Container(
-              margin: const EdgeInsets.symmetric(horizontal: NdSpace.xs),
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                color: p.panel,
-                borderRadius: BorderRadius.circular(NdRadius.inner),
+            itemBuilder: (context, i) => GestureDetector(
+              onTap: () {
+                Sfx.tick();
+                openPhotoViewer(context, photo: widget.photos[i]);
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: NdSpace.xs),
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: p.panel,
+                  borderRadius: BorderRadius.circular(NdRadius.inner),
+                ),
+                child: Hero(
+                  tag: photoHeroTag(widget.photos[i]),
+                  child: MediaImage(widget.photos[i], fit: BoxFit.contain),
+                ),
               ),
-              child: MediaImage(widget.photos[i], fit: BoxFit.contain),
             ),
           ),
         ),

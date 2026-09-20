@@ -13,6 +13,7 @@ import '../../services/sfx.dart';
 import '../../theme/palette.dart';
 import '../../widgets/nd_icons.dart';
 import '../../widgets/nd_video_player.dart';
+import '../../widgets/nd_photo_viewer.dart';
 import '../../widgets/nd_widgets.dart';
 import '../../widgets/tactile.dart';
 
@@ -390,15 +391,26 @@ class _JournalEntryViewState extends State<JournalEntryView> {
 
   Widget _photoBody() {
     final p = context.palette;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(NdRadius.card),
-      child: Container(
-        height: 430,
-        color: p.panel,
-        child: InteractiveViewer(
-          maxScale: 6,
+    final path = widget.entry.mediaPath;
+    return GestureDetector(
+      onTap: path == null
+          ? null
+          : () {
+              Sfx.tick();
+              openPhotoViewer(context, photo: path);
+            },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(NdRadius.card),
+        child: Container(
+          height: 430,
+          color: p.panel,
           child: Center(
-            child: MediaImage(widget.entry.mediaPath, fit: BoxFit.contain),
+            child: path == null
+                ? MediaImage(path, fit: BoxFit.contain)
+                : Hero(
+                    tag: photoHeroTag(path),
+                    child: MediaImage(path, fit: BoxFit.contain),
+                  ),
           ),
         ),
       ),
