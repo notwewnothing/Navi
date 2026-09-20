@@ -1,6 +1,6 @@
 # NAVI
 
-*An open source, feature rich journaling / app tracking app with some extra cool features.*
+*An open source, feature rich journaling / habit tracking app with some extra cool features :3*
 
 ## Features
 
@@ -44,72 +44,72 @@ Grab the latest APK from [Releases](https://github.com/notwewnothing/Navi/releas
 lib/
 ├── main.dart
 ├── models/
-│   ├── alarm.dart             # Alarm, AlarmRepeat, nextFire()
-│   ├── block_rule.dart        # App blocking rule (packages + time window)
-│   ├── day_stats.dart         # Per-day usage + distraction totals
-│   ├── habit.dart             # Habit, HabitLog, streaks, rest days
-│   ├── journal_entry.dart     # JournalEntry, JournalType (text/photo/video/audio)
-│   └── schedule_event.dart    # ScheduleEvent, EventType, EventRepeat
+│   ├── alarm.dart            
+│   ├── block_rule.dart        
+│   ├── day_stats.dart         
+│   ├── habit.dart             
+│   ├── journal_entry.dart    
+│   └── schedule_event.dart    
 ├── screens/
-│   ├── shell.dart             # Root nav capsule + tab host
-│   ├── splash_screen.dart     # Boot animation
+│   ├── shell.dart             
+│   ├── splash_screen.dart     
 │   ├── home/
-│   │   └── home_screen.dart   # Dashboard, stats, quick add
+│   │   └── home_screen.dart  
 │   ├── habits/
-│   │   ├── habits_screen.dart       # Habit list + swipe-to-delete w/ undo
-│   │   ├── habit_edit_sheet.dart    # Create / edit habit
-│   │   └── habit_checkin_screen.dart # Check-in, optional photo proof
-│   ├── journal/
-│   │   ├── journal_screen.dart        # Entry feed
-│   │   ├── journal_calendar_screen.dart # Month grid + per-day gallery
-│   │   ├── journal_entry_editor.dart  # Capture sheet (text/photo/video/voice)
-│   │   └── journal_entry_view.dart    # Entry reader + media viewer
+│   │   ├── habits_screen.dart       
+│   │   ├── habit_edit_sheet.dart    
+│   │   └── habit_checkin_screen.dart 
+│   ├── journal
+│   │   ├── journal_screen.dart      
+│   │   ├── journal_calendar_screen.dart 
+│   │   ├── journal_entry_editor.dart 
+│   │   └── journal_entry_view.dart    
 │   ├── schedule/
-│   │   ├── schedule_screen.dart     # Timeline + upcoming
-│   │   ├── day_detail_screen.dart   # Single day, drag to draw events
-│   │   └── event_edit_sheet.dart    # Create / edit event
+│   │   ├── schedule_screen.dart    
+│   │   ├── day_detail_screen.dart
+│   │   └── event_edit_sheet.dart   
 │   ├── blocker/
-│   │   ├── app_block_screen.dart    # Blocking rules + service status
-│   │   └── rule_edit_sheet.dart     # Create / edit a block rule
+│   │   ├── app_block_screen.dart    
+│   │   └── rule_edit_sheet.dart     
 │   ├── timer/
-│   │   └── timer_screen.dart        # Focus / sleep / nap sessions
+│   │   └── timer_screen.dart       
 │   ├── alarm/
-│   │   └── alarm_ring_screen.dart   # Full-screen ring (snooze / stop)
+│   │   └── alarm_ring_screen.dart  
 │   ├── stats/
-│   │   └── screen_time_screen.dart  # 7-day chart + per-app breakdown
+│   │   └── screen_time_screen.dart  
 │   └── settings/
-│       └── settings_screen.dart     # Prefs, permissions, export / import
+│       └── settings_screen.dart     
 ├── services/
-│   ├── habit_store.dart          # Habit CRUD, logs, streaks, persistence
-│   ├── journal_store.dart        # Entry CRUD + media links
-│   ├── schedule_store.dart       # Event CRUD, repeat expansion
-│   ├── alarm_store.dart          # Alarm CRUD, ticker, firing logic
-│   ├── block_store.dart          # Block rules + active-window checks
-│   ├── session_store.dart        # Focus / sleep session recording
-│   ├── settings_store.dart       # App preferences
-│   ├── backup_service.dart       # Zip export / import (json + media)
-│   ├── media_store.dart          # Photo / video / audio file management
-│   ├── notification_service.dart # flutter_local_notifications scheduling
-│   ├── notification_actions.dart # Check-in / snooze action handling
-│   ├── app_blocker.dart          # MethodChannel → AccessibilityService
-│   ├── app_icons.dart            # MethodChannel → app icon PNGs
-│   ├── device_usage.dart         # app_usage wrapper
-│   ├── device_admin_service.dart # Device admin for strict blocking
-│   ├── alarm_buzz.dart           # Alarm sound + haptics foreground service
-│   └── sfx.dart                  # UI sound effects
+│   ├── habit_store.dart        
+│   ├── journal_store.dart      
+│   ├── schedule_store.dart    
+│   ├── alarm_store.dart        
+│   ├── block_store.dart      
+│   ├── session_store.dart       
+│   ├── settings_store.dart     
+│   ├── backup_service.dart      
+│   ├── media_store.dart       
+│   ├── notification_service.dart 
+│   ├── notification_actions.dart
+│   ├── app_blocker.dart        
+│   ├── app_icons.dart            
+│   ├── device_usage.dart      
+│   ├── device_admin_service.dart 
+│   ├── alarm_buzz.dart           
+│   └── sfx.dart                  
 ├── theme/
-│   └── palette.dart              # Ndot type, colors, radii
+│   └── palette.dart             
 └── widgets/
-    ├── nd_widgets.dart        # NdButton, NdCard, NdSwitch
-    ├── nd_icons.dart          # Dot-matrix glyph set
-    ├── nd_photo_viewer.dart   # Full-screen photo viewer
-    ├── nd_video_player.dart   # Video player with scrubbable waveform
-    ├── habit_dot_grid.dart    # Habit history dot grid
-    ├── commitment_board.dart  # Animated commitment board
-    ├── month_grid.dart        # Calendar month grid
-    ├── app_picker_sheet.dart  # Installed app picker
-    ├── tactile.dart           # Press-scale animation
-    └── routes.dart            # Page transitions
+    ├── nd_widgets.dart      
+    ├── nd_icons.dart          
+    ├── nd_photo_viewer.dart   
+    ├── nd_video_player.dart   
+    ├── habit_dot_grid.dart   
+    ├── commitment_board.dart  
+    ├── month_grid.dart        
+    ├── app_picker_sheet.dart  
+    ├── tactile.dart          
+    └── routes.dart       
 ```
 
 ## Permissions
@@ -140,4 +140,4 @@ flutter build apk --release
 flutter test
 ```
 
-**Status:** v1.0.1
+**Status:** v1.0.1 (still WIP)
